@@ -104,3 +104,10 @@ export async function deleteFieldWithRecords(fieldId) {
   }
   return deleteField(fieldId);
 }
+
+// ---------- messages (contact form) ----------
+
+/** Save a contact-form message: { name, email, message, sentAt }. */
+export async function createMessage(message) {
+  return request('/messages', { method: 'POST', body: message });
+}

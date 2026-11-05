@@ -8,7 +8,7 @@ import { riceParams, riceStep } from '../js/models/rice.js';
 import { buildPlan, recommendationForDate, requiredPastDays } from '../js/models/plan.js';
 import { verdict, buildComparison } from '../js/models/compare.js';
 import { STATUS, FIELD_STATUS } from '../js/models/constants.js';
-import { validateField, validateRecord } from '../js/utils/validation.js';
+import { validateField, validateRecord, validateContact } from '../js/utils/validation.js';
 import { mmToM3, m3ToMm, pumpHoursToMm, drumSecondsToM3PerHour, formatHours, pumpTime } from '../js/utils/format.js';
 import { addDays, daysBetween, isValidISODate } from '../js/utils/date.js';
 
@@ -239,6 +239,13 @@ test('Date helpers', () => {
   assertEqual(daysBetween('2026-10-01', '2026-10-15'), 14);
   assertEqual(isValidISODate('2026-02-30'), false);
   assertEqual(isValidISODate('2028-02-29'), true);
+});
+
+test('Contact form validation', () => {
+  const ok = { name: 'Dara', email: 'dara@example.com', message: 'When should I water my rice?' };
+  assertEqual(Object.keys(validateContact(ok)).length, 0, 'valid message');
+  const bad = validateContact({ name: 'D', email: 'dara@', message: 'hi' });
+  assertEqual(Object.keys(bad).sort().join(','), 'email,message,name', 'all three errors');
 });
 
 // ---------- Runner ----------

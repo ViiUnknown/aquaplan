@@ -65,7 +65,7 @@ There are two calculation models:
 
 | ID | Requirement |
 |---|---|
-| NFR-1 | SPA with hash-based routing (`#/dashboard`, `#/fields/new`, `#/fields/:id`, `#/fields/:id/edit`, `#/fields/:id/records`). |
+| NFR-1 | SPA with hash-based routing (`#/home`, `#/purpose`, `#/how-it-works`, `#/about`, `#/contact`, `#/dashboard`, `#/fields/new`, `#/fields/:id`, `#/fields/:id/edit`, `#/fields/:id/records`). |
 | NFR-2 | Responsive layout from 360 px (phone) to desktop. |
 | NFR-3 | A loading indicator for every network request. |
 | NFR-4 | Clear error messages for network failure, API errors, missing data and empty lists. The app must never show a blank screen. |

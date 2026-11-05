@@ -221,10 +221,9 @@ small {
 }
 
 .container {
-  width: 100%;
-  max-width: 1080px;
+  width: 100%; /* full screen width: content goes edge to edge */
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 clamp(16px, 3vw, 40px); /* side space grows a little on big screens */
 }
 
 .muted {
@@ -255,11 +254,18 @@ small {
 }
 
 .site-header__inner {
+  position: relative; /* the menu panel is placed under the header */
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   min-height: 60px;
+}
+
+.site-header__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .brand {
@@ -274,22 +280,92 @@ small {
   width: auto;
 }
 
-.nav {
+/* ☰ button: three bars that turn into an X while the menu is open */
+.menu-toggle {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
 }
 
-.nav a:not(.btn) {
-  color: var(--bar-text);
-  text-decoration: none;
+.menu-toggle:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.menu-toggle__bar {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--bar-text);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.menu-toggle[aria-expanded="true"] .menu-toggle__bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.menu-toggle[aria-expanded="true"] .menu-toggle__bar:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-toggle[aria-expanded="true"] .menu-toggle__bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* The menu panel that drops down on the left */
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 0.5rem;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
+  animation: menu-in 0.15s ease-out;
+}
+
+.menu a {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  color: var(--text);
   font-weight: 500;
+  text-decoration: none;
 }
 
-.nav a[aria-current="page"]:not(.btn) {
-  color: var(--bar-text);
-  text-decoration: underline;
-  text-underline-offset: 6px;
+.menu a:hover {
+  background: var(--surface-2);
+}
+
+.menu a[aria-current="page"] {
+  background: var(--surface-2);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .menu-toggle__bar {
+    animation: none;
+    transition: none;
+  }
 }
 
 main {
@@ -310,19 +386,72 @@ main:focus {
 .site-footer {
   background: var(--bar-bg);
   border-top: 1px solid var(--bar-border);
-  color: var(--bar-muted);
+  color: var(--bar-text);
+  padding: 1.25rem 0;
   font-size: 0.85rem;
-  text-align: center;
-  padding-top: 1rem;
-  padding-bottom: 1.5rem;
 }
 
-.site-footer p {
-  margin: 0 0 0.25rem;
+/* Logo on the far left, the two columns on the far right. Phones: everything stacks. */
+.site-footer__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.site-footer a {
-  color: var(--bar-text); /* green links would disappear on the green footer */
+@media (min-width: 640px) {
+  .site-footer__inner {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 3rem;
+  }
+
+  .site-footer__brand {
+    margin-right: auto; /* pushes the columns to the right edge */
+  }
+}
+
+.site-footer__brand img {
+  display: block;
+  height: 32px;
+  width: auto;
+}
+
+.footer-col__title {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bar-muted);
+}
+
+/* A vertical list without bullet points */
+.footer-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* 6 page links in 2 short columns (3 + 3) keep the footer low */
+.footer-col--pages ul {
+  display: grid;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  column-gap: 2rem;
+}
+
+.footer-col a {
+  color: var(--bar-text); /* blue/green links would disappear on the navy footer */
+  text-decoration: none;
+}
+
+.footer-col a:hover,
+.footer-col a[aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 5px;
 }
 
 /* ==========================================================================
@@ -899,7 +1028,8 @@ text-align: right;
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 44px;
   padding: 0.5rem 0.75rem;
@@ -910,15 +1040,21 @@ select {
   border-radius: var(--radius-sm);
 }
 
+textarea {
+  resize: vertical;
+}
+
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: var(--primary);
   outline: none;
   background: var(--surface);
 }
 
 input[aria-invalid="true"],
-select[aria-invalid="true"] {
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
   border-color: var(--danger);
 }
 
@@ -1276,9 +1412,6 @@ select[aria-invalid="true"] {
   .page-head .actions .btn {
     flex: 1;
   }
-  .nav {
-    gap: 0.6rem;
-  }
 }
 
 /* ==========================================================================
@@ -1355,5 +1488,156 @@ select[aria-invalid="true"] {
   .theme-switch__knob,
   .theme-switch__icon {
     transition: none;
+  }
+}
+
+/* ==========================================================================
+   19. Information pages (#/home, #/purpose, #/how-it-works, #/about, #/contact)
+   ========================================================================== */
+/* Big navy banner on the home page, same colour as the header and footer */
+.home-hero {
+  background: var(--bar-bg);
+  color: var(--bar-text);
+  border-radius: var(--radius);
+  padding: 3rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.home-hero__logo {
+  width: min(300px, 80%);
+  height: auto;
+}
+
+.home-hero__title {
+  font-size: 2rem;
+  max-width: 22ch;
+  margin: 0;
+}
+
+.home-hero__text {
+  color: var(--bar-muted);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.info-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 800px) {
+  .info-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .info-grid--4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.info-grid h2 {
+  font-size: 1.1rem;
+}
+
+.info-grid p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Home page cards that link to the other pages */
+.info-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s;
+}
+
+.info-link:hover {
+  box-shadow: 0 0 0 2px var(--primary), var(--shadow);
+  transform: translateY(-2px);
+}
+
+.info-link__more {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 0.75rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-text);
+  font-weight: 800;
+}
+
+.team {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.team__member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.25rem 0.75rem;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.team__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bar-bg);
+  color: var(--bar-text);
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.team__name {
+  font-weight: 700;
+}
+
+.team__role {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .home-hero {
+    padding: 2rem 1rem;
+  }
+
+  .home-hero__title {
+    font-size: 1.5rem;
   }
 }

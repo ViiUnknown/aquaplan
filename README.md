@@ -10,6 +10,7 @@ Course: INFO 251 001 – Web Development II, American University of Phnom Penh �
 
 ## Features
 
+- **Information pages:** Home, Our purpose, How it works, About us and Contact us (the contact form is saved to MockAPI). All pages are in the ☰ menu and the footer.
 - **Fields:** add, edit and delete fields (crop, area, soil, planting date, location). All forms are validated in the browser.
 - **Location:** search a place by name, click it on a map, or use the phone's GPS.
 - **7-day plan:** one status per day (**Water today / Wait for the rain / Check your field / No water needed**) with the amount to apply.
@@ -29,7 +30,7 @@ Course: INFO 251 001 – Web Development II, American University of Phnom Penh �
 | [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api) | Place name → coordinates | GET |
 | [OpenStreetMap tiles](https://www.openstreetmap.org/copyright) + [Leaflet 1.9.4](https://leafletjs.com/) | Map for picking a location | GET (tiles) |
 | [Nominatim](https://nominatim.org/release-docs/latest/api/Reverse/) | Map point → place name | GET |
-| [MockAPI.io](https://mockapi.io) | Stores `fields` and `records` | **GET, POST, PUT, DELETE** |
+| [MockAPI.io](https://mockapi.io) | Stores `fields`, `records` and contact `messages` | **GET, POST, PUT, DELETE** |
 
 Open-Meteo is read-only, so MockAPI provides the write requests, as the project guidelines allow.
 

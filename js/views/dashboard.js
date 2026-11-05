@@ -37,6 +37,9 @@ export async function renderDashboard(ctx) {
           <h1>Your fields</h1>
           <p class="meta" data-summary>${fields.length} field(s) · checking the weather…</p>
         </div>
+        <div class="actions">
+          <a class="btn btn--primary" href="#/fields/new">+ Add field</a>
+        </div>
       </div>
       <ul class="card-grid">
         ${fields.map(field => html`

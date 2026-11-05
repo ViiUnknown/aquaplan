@@ -1,23 +1,31 @@
 // App start-up and hash router.
+//   #/home  #/purpose  #/how-it-works  #/about  #/contact   information pages
 //   #/dashboard            all fields
 //   #/fields/new           add a field
 //   #/fields/:id           field detail (plan, chart, comparison)
 //   #/fields/:id/edit      edit a field
 //   #/fields/:id/records   irrigation records + depth readings
 
+import { renderHome, renderPurpose, renderHowItWorks, renderAbout, renderContact } from './views/pages.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderFieldForm } from './views/fieldForm.js';
 import { renderFieldDetail } from './views/fieldDetail.js';
 import { renderRecords } from './views/records.js';
 import { html, setHTML, renderError, friendlyError } from './utils/ui.js';
 import { initThemeToggle } from './theme.js';
+import { initMenu } from './menu.js';
 
 const app = document.getElementById('app');
 
 const routes = [
-  { pattern: /^#\/?$/, view: renderDashboard, nav: 'dashboard' },
+  { pattern: /^#\/?$/, view: renderHome, nav: 'home' },
+  { pattern: /^#\/home$/, view: renderHome, nav: 'home' },
+  { pattern: /^#\/purpose$/, view: renderPurpose, nav: 'purpose' },
+  { pattern: /^#\/how-it-works$/, view: renderHowItWorks, nav: 'how' },
+  { pattern: /^#\/about$/, view: renderAbout, nav: 'about' },
+  { pattern: /^#\/contact$/, view: renderContact, nav: 'contact' },
   { pattern: /^#\/dashboard$/, view: renderDashboard, nav: 'dashboard' },
-  { pattern: /^#\/fields\/new$/, view: renderFieldForm, nav: 'new' },
+  { pattern: /^#\/fields\/new$/, view: renderFieldForm, nav: 'dashboard' },
   { pattern: /^#\/fields\/([^/]+)\/edit$/, view: renderFieldForm },
   { pattern: /^#\/fields\/([^/]+)\/records$/, view: renderRecords },
   { pattern: /^#\/fields\/([^/]+)$/, view: renderFieldDetail },
@@ -44,7 +52,7 @@ function highlightNav(nav) {
 }
 
 async function router() {
-  const hash = window.location.hash || '#/dashboard';
+  const hash = window.location.hash || '#/home';
   const renderId = ++currentRender;
   const ctx = { container: app, isCurrent: () => renderId === currentRender };
 
@@ -69,5 +77,6 @@ async function router() {
 }
 
 initThemeToggle(document.querySelector('[data-theme-toggle]'));
+initMenu(document.querySelector('[data-menu-toggle]'), document.getElementById('site-menu'));
 window.addEventListener('hashchange', router);
 router();

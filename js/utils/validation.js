@@ -93,3 +93,15 @@ export function validateRecord(r, field, today) {
 
   return errors;
 }
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Contact form: `m` = { name, email, message } (already trimmed). */
+export function validateContact(m) {
+  const errors = {};
+  if (m.name.length < 2 || m.name.length > 60) errors.name = 'Name must be 2–60 characters.';
+  if (!EMAIL_PATTERN.test(m.email)) errors.email = 'Enter a valid email, e.g. name@example.com.';
+  if (m.message.length < 10) errors.message = 'Message must be at least 10 characters.';
+  else if (m.message.length > 1000) errors.message = 'Message must be 1000 characters or fewer.';
+  return errors;
+}

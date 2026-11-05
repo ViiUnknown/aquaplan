@@ -1,0 +1,11 @@
+{
+  "name": "aquaplan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AquaPlan – Farm Weather & Irrigation Planner (vanilla JS single-page app)",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve .",
+    "test": "node tests/models.test.js"
+  }
+}

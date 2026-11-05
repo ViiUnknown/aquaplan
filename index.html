@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AquaPlan – Farm Irrigation Planner</title>
+  <meta name="description" content="AquaPlan tells farmers when to irrigate and how much water to apply, using live weather and evapotranspiration data.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+  <!-- Apply a saved light/dark choice before the page paints (avoids a flash of the wrong theme). -->
+  <script>try { const t = localStorage.getItem('aquaplan-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Pacifico&display=swap">
+  <!-- Leaflet: map for picking a field's location (tiles from OpenStreetMap) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="#/dashboard">aquaplan</a>
+      <nav class="nav" aria-label="Main">
+        <a href="#/dashboard" data-nav="dashboard">Dashboard</a>
+        <a href="#/fields/new" data-nav="new" class="btn btn--primary btn--sm">+ Add field</a>
+        <button class="btn btn--sm theme-toggle" type="button" data-theme-toggle>🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="app" class="container" tabindex="-1">
+    <noscript>AquaPlan needs JavaScript to run.</noscript>
+  </main>
+
+  <footer class="site-footer container">
+    <p>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0).
+       Calculations use simplified FAO-56 defaults. This is a course prototype, not agronomic advice.</p>
+    <p>INFO 251 Web Development II · American University of Phnom Penh</p>
+  </footer>
+</body>
+</html>

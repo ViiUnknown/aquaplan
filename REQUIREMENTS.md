@@ -26,15 +26,15 @@ There are two calculation models:
 
 ### Technology constraints
 - Vanilla HTML, CSS and JavaScript (ES modules). **No frontend framework.**
-- Chart.js may be used for charts **if the instructor allows it**. Otherwise use SVG or Canvas.
-- External APIs: **Open-Meteo** (weather and geocoding), **MockAPI.io** (data storage).
+- The chart is hand-drawn SVG (no chart library). The location map uses **Leaflet 1.9.4** with OpenStreetMap tiles.
+- External APIs: **Open-Meteo** (weather and geocoding), **Nominatim** (map point → place name),
+  **OpenStreetMap** tiles, and **MockAPI.io** (data storage). The browser Geolocation API is used for "use my location".
 - No login. All users share one MockAPI dataset (demo use only).
+- Deployed as static files on **GitHub Pages**.
 
-### Still to confirm with the instructor
-- [ ] Grading rubric and submission deadline
-- [ ] Whether Chart.js (or any external library) is allowed
-- [ ] Whether deployment is required (GitHub Pages / Netlify)
-- [ ] Team member responsibilities
+### Deadlines (from the course guidelines and progress update)
+- Final submission: **26 Nov 2026**. Presentation: **27 Nov 2026** (15 min + 5 min Q&A).
+- [ ] Team member responsibilities written down for the presentation
 
 ---
 
@@ -44,19 +44,22 @@ There are two calculation models:
 |---|---|
 | FR-1 | Create, read, update and delete **fields**. |
 | FR-2 | Validate field forms in the browser before saving (rules in §8). |
-| FR-3 | Search for a location by place name (Open-Meteo Geocoding) and store the chosen result's name, latitude and longitude. |
+| FR-3 | Choose a location by searching a place name (Open-Meteo Geocoding), clicking on a map (Leaflet + OSM, named with Nominatim) or using the device's GPS. Store the name, latitude and longitude. |
 | FR-4 | Fetch past and forecast daily rainfall and ET₀ for each field's coordinates (Open-Meteo Forecast). |
 | FR-5 | Select the model automatically from the crop type (rice → water depth; maize/soybean/cassava → soil deficit). |
 | FR-6 | Calculate crop evapotranspiration `ETc = Kc × ET₀`, with Kc adjusted by growth stage (§4). |
 | FR-7 | **Rice:** record measured water depth (entered in cm, stored in mm), project the depth 7 days ahead, and recommend a refill (§6). |
 | FR-8 | **Upland:** keep a daily soil-water balance and recommend irrigation when the deficit reaches RAW (§5). |
 | FR-9 | Show a 7-day plan with one status per day: **IRRIGATE / SKIP (rain) / MONITOR / OK** (§7). |
-| FR-10 | Show water amounts in **mm**, and also in **m³** when the area is known (`m³ = mm × areaHa × 10`). |
+| FR-10 | Show water amounts in **cm** (rice) and **m³** (`m³ = mm × areaHa × 10`), and in **pump hours** when the pump flow is known (`hours = m³ ÷ m³ per hour`). Amounts are stored in mm. |
 | FR-11 | Show a chart of the rice water depth (history plus projection, with refill and target lines). |
 | FR-12 | Create, read, update and delete **irrigation records** and **depth readings**. |
 | FR-13 | Compare the farmer's **usual** amount and **actual** recorded amounts against the **recommended** amount (§9). |
 | FR-14 | Dashboard listing every field with its crop, today's status and the next recommended action. |
 | FR-15 | Special statuses: **Not planted yet** (planting date in the future) and **Season finished** (past the total season length). |
+| FR-16 | Store an optional **pump flow** (m³/hour) per field. Offer a helper that works it out from the seconds needed to fill a 200 L drum (`m³/h = 720 ÷ seconds`). |
+| FR-17 | Record irrigation in the unit the farmer can measure: rice in **cm** or **pump hours**; upland crops in **pump hours** only (water soaks into the soil, so it can't be measured in cm). |
+| FR-18 | Light and dark theme: follows the device setting, with a toggle in the header that is remembered (`localStorage`). |
 
 ## 3. Non-Functional Requirements
 
@@ -70,6 +73,7 @@ There are two calculation models:
 | NFR-6 | Weather responses are cached per field in `sessionStorage` for 1 hour. |
 | NFR-7 | Calculation code (`js/models/`) is made of pure functions with no DOM or network access, so it can be tested on its own. |
 | NFR-8 | Only **inputs** are stored (fields, records, readings). Calculated state (deficit, projected depth) is recomputed every time and never saved. |
+| NFR-9 | Respect the Nominatim usage policy: at most about 1 request per second, with results cached in memory. |
 
 ---
 
@@ -209,17 +213,19 @@ Field-level statuses that replace the plan: **Not planted yet**, **Season finish
 | Crop | Required, one of `rice`, `maize`, `soybean`, `cassava` |
 | Area (ha) | Required, number > 0 and ≤ 1000 |
 | Planting date | Required, valid date, ≤ today + 30 days |
-| Location | Must be chosen from the geocoding results (lat/lon present) |
+| Location | Required: chosen from search results, the map or GPS (lat/lon present) |
 | Soil type | Required for upland crops |
 | Root depth Zr | 0.1–2.0 m |
 | p | 0.1–0.9 |
 | Seepage | 2–6 mm/day (rice) |
 | Refill / target / bund | `0 ≤ refill < target ≤ bund ≤ 300` (rice) |
-| Usual amount | Optional, ≥ 0 mm |
+| Pump flow | Optional, 1–1000 m³/hour. Required when an amount is entered in pump hours |
+| Usual amount | Optional, ≥ 0. Entered in cm (rice) or pump hours, stored as mm |
 | Usual interval | Optional, integer 1–60 days (required if usual amount is set) |
 | Record date | Required, not in the future, not before the planting date |
-| Irrigation amount | Required, > 0. Entered in mm **or** m³, stored as mm |
+| Irrigation amount | Required, > 0. Entered in cm (rice) **or** pump hours (≤ 24 per record), stored as mm |
 | Depth reading | Required, 0–30 cm (stored as mm) |
+| Note | Optional, at most 200 characters |
 
 Show errors next to each input, and keep the submit button from saving until every field is valid.
 
@@ -261,10 +267,13 @@ Views:
   "refillMm": 0,
   "targetMm": 50,
   "bundMm": 100,
+  "pumpM3PerHour": 60,
   "createdAt": "2026-09-01T08:00:00Z"
 }
 ```
 Rice-only properties are `null` for upland crops, and the upland-only properties (`rootDepthM`, `p`) are `null` for rice.
+`pumpM3PerHour` is `null` when the farmer hasn't entered a pump flow. Every property is always sent
+(with `null` for "not set"), because MockAPI fills missing schema properties with fake values.
 
 ### `records`
 ```json
@@ -282,7 +291,6 @@ Rice-only properties are `null` for upland crops, and the upland-only properties
 `type` is `"irrigation"` (uses `amountMm`) or `"depthReading"` (uses `depthMm`).
 Fetch the records for one field with `GET /records?fieldId=1`. MockAPI matches filters partially
 ("contains"), so keep only exact `fieldId` matches in JS, and treat a 404 on a list as an empty list.
-See [MOCKAPI_SETUP.md](MOCKAPI_SETUP.md) §7.
 
 Architecture and diagrams: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -300,8 +308,19 @@ GET https://geocoding-api.open-meteo.com/v1/search?name={query}&count=5&language
 GET https://api.open-meteo.com/v1/forecast
     ?latitude={lat}&longitude={lon}
     &daily=precipitation_sum,et0_fao_evapotranspiration,temperature_2m_max,temperature_2m_min
-    &past_days={0..92}&forecast_days=7
+    &past_days={0..92}&forecast_days=9
     &timezone=Asia/Phnom_Penh
+```
+(9 forecast days: the 7-day plan plus 2 days for the "rain is coming" look-ahead.)
+
+**Reverse geocoding (map click → place name)**
+```
+GET https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}&zoom=14&accept-language=en
+```
+
+**Map tiles**
+```
+GET https://tile.openstreetmap.org/{z}/{x}/{y}.png      (loaded by Leaflet)
 ```
 
 **MockAPI** (base URL from your MockAPI project, e.g. `https://<id>.mockapi.io/api/v1`)
@@ -320,29 +339,42 @@ Deleting a field must also delete its records (loop over them and send DELETE fo
 ```
 FinalProject/
 ├── index.html
-├── css/styles.css
-└── js/
-    ├── main.js              # start-up + hash router
-    ├── config.js            # MockAPI base URL, constants
-    ├── state.js             # in-memory cache of fields/records
-    ├── api/
-    │   ├── openMeteo.js     # geocode(), getWeather()
-    │   └── mockApi.js       # CRUD for fields and records
-    ├── models/
-    │   ├── constants.js     # crop table, soil AWC, defaults
-    │   ├── kc.js            # getKc(crop, dsp)
-    │   ├── upland.js        # runUplandBalance()
-    │   ├── rice.js          # runRiceProjection()
-    │   └── plan.js          # buildPlan() → statuses
-    ├── views/
-    │   ├── dashboard.js
-    │   ├── fieldForm.js
-    │   ├── fieldDetail.js
-    │   └── records.js
-    └── utils/
-        ├── validation.js
-        ├── format.js        # mm ↔ m³, dates
-        └── ui.js            # showLoading(), showError()
+├── css/styles.css           # light + dark themes, responsive layout
+├── js/
+│   ├── main.js              # start-up + hash router
+│   ├── theme.js             # light/dark toggle (saved in localStorage)
+│   ├── config.js            # MockAPI base URL, time zone, cache time
+│   ├── state.js             # one-time "flash" messages between pages
+│   ├── api/
+│   │   ├── http.js          # fetchJson(): friendly network / HTTP errors
+│   │   ├── openMeteo.js     # geocode(), getWeather() (+ sessionStorage cache)
+│   │   ├── nominatim.js     # reverseGeocode() for map clicks (cached)
+│   │   └── mockApi.js       # CRUD for fields and records
+│   ├── models/              # pure functions – no DOM, no fetch
+│   │   ├── constants.js     # crop table, soil AWC, defaults
+│   │   ├── kc.js            # getKc(crop, dsp), seasonLength()
+│   │   ├── upland.js        # uplandParams(), uplandStep()
+│   │   ├── rice.js          # riceParams(), riceStep()
+│   │   ├── plan.js          # buildPlan() → statuses, recommendationForDate()
+│   │   └── compare.js       # buildComparison(), verdict()
+│   ├── services/
+│   │   ├── fieldService.js  # loadFieldAnalysis(): field + records + weather + model
+│   │   └── demoData.js      # seedDemoData()
+│   ├── views/
+│   │   ├── dashboard.js
+│   │   ├── fieldForm.js
+│   │   ├── fieldDetail.js
+│   │   ├── records.js
+│   │   ├── components.js    # status badges, status card, pump-flow row, setup notice
+│   │   └── chart.js         # SVG line chart
+│   └── utils/
+│       ├── date.js          # "YYYY-MM-DD" helpers
+│       ├── validation.js
+│       ├── format.js        # mm ↔ m³, cm ↔ mm, pump hours, formatting
+│       └── ui.js            # html`` escaping, loading/error states, form helpers
+└── tests/
+    ├── models.test.js       # 24 tests: T1–T8, plan, validation, pump hours (npm test)
+    └── index.html           # same tests in the browser
 ```
 
 ---
@@ -359,6 +391,7 @@ FinalProject/
 | T6 | Maize, DSP 37 (dev stage, L1 = 20, dev = 35) | Kc = 0.30 + 17/35 × 0.90 = 0.737 |
 | T7 | 30 mm on 1.5 ha | 30 × 1.5 × 10 = 450 m³ |
 | T8 | Planting date tomorrow | Status "Not planted yet" |
+| T9 | 50 mm on 1.5 ha, pump 60 m³/h | 750 m³ ÷ 60 = 12.5 h → "12 h 30 min" |
 
 ---
 
@@ -374,5 +407,6 @@ FinalProject/
 | M6 | Polish | Rice chart, dashboard cards, responsive layout tested on a phone, deployed |
 
 ## 15. Future Enhancements (not required)
-Map picking (Leaflet), browser GPS, AWD rice mode, roots that deepen over the season, more crops,
-Khmer translation, user accounts.
+AWD rice mode, roots that deepen over the season, more crops, Khmer translation, user accounts
+(so each farmer sees only their own fields), offline support, and reminders.
+(Map picking and browser GPS, listed here originally, are now done.)

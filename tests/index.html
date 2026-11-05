@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AquaPlan – Model Tests</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 16px; background: #f4f7f6; color: #17241f; }
+    li { margin: 0.3rem 0; }
+    .pass { color: #1f7a3a; }
+    .fail { color: #b42318; }
+    code { display: block; margin-left: 1.5rem; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>AquaPlan model tests</h1>
+  <p id="summary">Running…</p>
+  <ul id="results"></ul>
+  <script type="module">
+    import { runTests } from './models.test.js';
+    const results = runTests();
+    const list = document.getElementById('results');
+    for (const r of results) {
+      const li = document.createElement('li');
+      li.className = r.passed ? 'pass' : 'fail';
+      li.textContent = `${r.passed ? '✔' : '✘'} ${r.name}`;
+      if (!r.passed) {
+        const code = document.createElement('code');
+        code.textContent = r.error;
+        li.append(code);
+      }
+      list.append(li);
+    }
+    const failed = results.filter(r => !r.passed).length;
+    document.getElementById('summary').textContent = `${results.length - failed}/${results.length} passed`;
+  </script>
+</body>
+</html>

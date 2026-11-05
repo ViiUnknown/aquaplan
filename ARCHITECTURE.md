@@ -7,7 +7,7 @@ other, how data is stored in MockAPI, and what happens step by step for the main
 > install the extension **"Markdown Preview Mermaid Support"** (by Matt Bierner), then press
 > `Ctrl+Shift+V` to open the preview. You can also paste any diagram into https://mermaid.live.
 
-Related documents: [REQUIREMENTS.md](REQUIREMENTS.md) · [EXPLANATION.md](EXPLANATION.md) · [MOCKAPI_SETUP.md](MOCKAPI_SETUP.md)
+Related documents: [REQUIREMENTS.md](REQUIREMENTS.md) · [EXPLANATION.md](EXPLANATION.md)
 
 ---
 
@@ -15,12 +15,15 @@ Related documents: [REQUIREMENTS.md](REQUIREMENTS.md) · [EXPLANATION.md](EXPLAN
 
 AquaPlan is a **client-only single-page application**. All application logic (routing, validation,
 irrigation calculations, rendering) runs **in the user's browser**. There is no custom server.
-Two external services are used:
+These external services are used:
 
 | Service | Role | Auth | Data direction |
 |---|---|---|---|
 | **Open-Meteo Geocoding** | Place name → latitude/longitude | None | Read only |
 | **Open-Meteo Forecast** | Past and forecast rain + ET₀ | None | Read only |
+| **OpenStreetMap tiles** (via Leaflet 1.9.4 from cdnjs) | Map for picking a field's location | None | Read only |
+| **Nominatim** (OpenStreetMap) | Map point → place name (reverse geocoding) | None | Read only |
+| **Browser Geolocation API** | "Use my location" button | User permission | Read only |
 | **MockAPI.io** | Stores `fields` and `records` (our "database") | None (public URL) | Read + write |
 
 Key design choices:
@@ -28,6 +31,7 @@ Key design choices:
 2. **Pure calculation core:** `js/models/` has no DOM or `fetch`, so it is easy to test.
 3. **Store inputs, compute outputs:** MockAPI holds only what the user entered. Deficits, depths and plans are recalculated on every view.
 4. **Hash routing:** one `index.html`. The `#/...` part of the URL decides which view is shown.
+5. **Store mm, show farmer units:** water amounts are always stored in mm and converted for display to cm, m³ or pump hours.
 
 ---
 
@@ -42,17 +46,25 @@ flowchart LR
     subgraph browser["User's browser"]
         app["AquaPlan SPA<br/>HTML + CSS + Vanilla JS"]
         cache[("sessionStorage<br/>weather cache")]
+        theme[("localStorage<br/>light/dark choice")]
+        gps["Geolocation API"]
     end
 
     geo["Open-Meteo<br/>Geocoding API"]
     wx["Open-Meteo<br/>Forecast API"]
+    osm["OpenStreetMap<br/>map tiles"]
+    nom["Nominatim<br/>reverse geocoding"]
     mock[("MockAPI.io<br/>fields · records")]
 
     farmer -- "uses" --> app
     app -- "GET place search" --> geo
     app -- "GET daily rain + ET0" --> wx
+    app -- "GET tiles (Leaflet)" --> osm
+    app -- "GET place name for a map point" --> nom
     app -- "GET / POST / PUT / DELETE" --> mock
     app <--> cache
+    app <--> theme
+    app --> gps
 ```
 
 ---
@@ -73,16 +85,21 @@ flowchart TB
 
     subgraph cloud["Third-party cloud APIs (HTTPS, JSON)"]
         om["api.open-meteo.com<br/>geocoding-api.open-meteo.com"]
+        map["tile.openstreetmap.org<br/>nominatim.openstreetmap.org"]
+        cdn["cdnjs.cloudflare.com<br/>Leaflet library"]
         ma["&lt;project-id&gt;.mockapi.io/api/v1"]
     end
 
     host -- "1 download static files" --> client
+    cdn -- "1b download Leaflet" --> client
     client -- "2 fetch() weather" --> om
     client -- "3 fetch() CRUD" --> ma
+    client -- "4 map tiles + place names" --> map
 ```
 
-The host only serves files; it runs no code. All requests to Open-Meteo and MockAPI go **directly
-from the browser** to those services (both allow cross-origin requests).
+The host only serves files; it runs no code. The live site is on **GitHub Pages**
+(https://viiunknown.github.io/aquaplan/). All requests to Open-Meteo, Nominatim and MockAPI go
+**directly from the browser** to those services (all allow cross-origin requests).
 
 ---
 
@@ -99,12 +116,14 @@ flowchart TB
 
     subgraph L0["Application shell"]
         main["main.js<br/>router + start-up"]
-        state["state.js<br/>in-memory cache"]
+        state["state.js<br/>flash messages"]
+        theme["theme.js<br/>light/dark toggle"]
     end
 
     subgraph L2["Service layer"]
         subgraph api["js/api/"]
             om["openMeteo.js<br/>geocode · getWeather"]
+            nom["nominatim.js<br/>reverseGeocode"]
             ma["mockApi.js<br/>fields + records CRUD"]
         end
         subgraph models["js/models/ (pure functions)"]
@@ -144,12 +163,14 @@ flowchart TB
 | `main.js` | Listens for `hashchange` and calls the matching view | views | fetch directly |
 | `views/*` | Build HTML, handle events, call services, show loading/errors | api, models, utils, state | — |
 | `api/openMeteo.js` | Build Open-Meteo URLs, fetch, reshape arrays into day objects, cache | config, `sessionStorage` | DOM |
+| `api/nominatim.js` | Map point → place name, cached in memory (usage policy: ≤ 1 request/second) | `http.js` | DOM |
 | `api/mockApi.js` | One function per CRUD action, throw on non-2xx | config | DOM |
 | `models/*` | Kc, water balance, projection, plan statuses | constants | DOM, fetch, storage |
 | `utils/validation.js` | Return `{field: message}` error maps | — | fetch |
-| `utils/format.js` | mm ↔ m³, cm ↔ mm, date formatting | — | — |
+| `utils/format.js` | mm ↔ m³, cm ↔ mm, mm ↔ pump hours, drum timing → m³/h, formatting | — | — |
 | `utils/ui.js` | Spinner, error banner, empty state, HTML escaping | DOM | fetch |
-| `state.js` | Hold the last-loaded fields/records so the UI doesn't refetch on every click | — | — |
+| `state.js` | Hold a one-time "flash" message (e.g. "Field saved") to show on the next page | — | — |
+| `theme.js` | Light/dark toggle button, saves the choice in `localStorage` | DOM | fetch |
 
 ---
 
@@ -200,6 +221,7 @@ erDiagram
         number refillMm "rice only"
         number targetMm "rice only"
         number bundMm "rice only"
+        number pumpM3PerHour "nullable, pump flow"
     }
 
     RECORDS {
@@ -272,7 +294,7 @@ flowchart LR
 | POST | `/fields` | field JSON (no id) | 201 + created object | new form |
 | PUT | `/fields/:id` | full field JSON | 200 + updated object | edit form |
 | DELETE | `/fields/:id` | – | 200 + deleted object | detail (after deleting its records) |
-| GET | `/records?fieldId=:id` | – | 200 + array (**filter exactly in JS**, see MOCKAPI_SETUP §7) | detail, records |
+| GET | `/records?fieldId=:id` | – | 200 + array (**filter exactly in JS**: MockAPI filters match partially) | detail, records |
 | POST | `/records` | record JSON | 201 | records |
 | PUT | `/records/:id` | full record JSON | 200 | records |
 | DELETE | `/records/:id` | – | 200 | records |
@@ -293,13 +315,18 @@ sequenceDiagram
     participant MA as mockApi.js
     participant M as MockAPI.io
 
-    U->>V: types "Battambang", clicks Search
-    V->>OM: geocode("Battambang")
-    OM->>G: GET /v1/search?name=Battambang&count=5
-    G-->>OM: { results: [...] }
-    OM-->>V: list of places
-    V-->>U: show results list
-    U->>V: picks a place (stores lat/lon), fills form, clicks Save
+    alt search by name
+        U->>V: types "Battambang", clicks Search
+        V->>OM: geocode("Battambang")
+        OM->>G: GET /v1/search?name=Battambang&count=6
+        G-->>OM: { results: [...] }
+        OM-->>V: list of places
+        V-->>U: show results list, user picks one
+    else click the map or "Use my location"
+        U->>V: clicks a point (or GPS gives lat/lon)
+        V->>V: Nominatim reverse → place name
+    end
+    U->>V: fills form (optional pump flow), clicks Save
     V->>VAL: validateField(formData)
     alt has errors
         VAL-->>V: { areaHa: "must be > 0" }
@@ -361,13 +388,17 @@ sequenceDiagram
     participant MA as mockApi.js
     participant M as MockAPI.io
 
-    U->>V: enters date + amount (mm or m³), Save
-    V->>V: validate, convert m³ to mm
+    U->>V: enters date + amount (cm or pump hours), Save
+    V->>V: validate, convert cm / hours to mm
     V->>MOD: recommendation for that date
     MOD-->>V: recommendedMm
     V->>MA: createRecord({fieldId, date, type:"irrigation", amountMm, recommendedMm})
     MA->>M: POST /records
     M-->>MA: 201 record
+    opt pump flow changed
+        V->>MA: updateField(id, {..., pumpM3PerHour})
+        MA->>M: PUT /fields/:id
+    end
     V-->>U: list updated, comparison recalculated
 ```
 
@@ -413,7 +444,7 @@ flowchart TB
     sim_r --> sim
     sim_u --> sim
     sim["daily state<br/>past days + 7 forecast days"] --> plan["plan.js<br/>status per forecast day"]
-    plan --> out["IRRIGATE / SKIP / MONITOR / OK<br/>+ amount mm and m³"]
+    plan --> out["IRRIGATE / SKIP / MONITOR / OK<br/>+ amount in cm, m³ and pump hours"]
 ```
 
 ### Daily status decision
@@ -439,10 +470,13 @@ flowchart TD
 |---|---|---|
 | No internet / DNS failure (`fetch` rejects) | view `try/catch` | "You appear to be offline." + **Retry** |
 | MockAPI 404 on `/fields/:id` | view | "Field not found." + link to dashboard |
-| MockAPI 404 on a filtered list | `mockApi.js` | Treated as an empty list `[]` (see MOCKAPI_SETUP §7) |
+| MockAPI 404 on a filtered list | `mockApi.js` | Treated as an empty list `[]` |
 | MockAPI 429 / 5xx | view | "Storage service is busy, try again." + **Retry** |
 | Open-Meteo error / missing `daily` | view | Field info still shown. Plan area says "Weather unavailable" |
 | Geocoding has no `results` | form | "No places found, try another spelling." |
+| Nominatim fails for a map click | form | The coordinates are used as the place name |
+| GPS denied or unavailable | form | "Could not get your location. Tap the map instead." |
+| Leaflet / map fails to load | form | "The map could not load… Use the search below instead." |
 | Validation errors | form | Messages under each input. Nothing is sent |
 | Rice field with no depth reading | detail | "Enter today's water depth to see a plan" + input |
 
@@ -458,3 +492,4 @@ messages in one place and the API code simple.
 - User-typed text is shown with `textContent` (or escaped) to prevent HTML/script injection.
 - Calculations are simplified FAO-56 defaults, **not** agronomic advice.
 - Free API tiers have limits on resources and requests, so caching reduces calls.
+- Nominatim allows about 1 request per second, so map-click names are cached (≈100 m grid).

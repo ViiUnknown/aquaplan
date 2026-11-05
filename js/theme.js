@@ -1,5 +1,6 @@
-// Light / dark mode. By default the app follows the device setting; the 🌙/☀ button
-// overrides it, and the choice is saved in localStorage (applied early by index.html).
+// Light / dark mode. By default the app follows the device setting; the switch in the header
+// (sun on the left = light, moon on the right = dark) overrides it, and the choice is saved
+// in localStorage (applied early by index.html).
 
 const STORAGE_KEY = 'aquaplan-theme';
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -19,20 +20,19 @@ function save(theme) {
 export function initThemeToggle(button) {
   if (!button) return;
 
-  // The button shows where it will take you: 🌙 in light mode, ☀ in dark mode.
-  function showIcon() {
+  // The switch is "on" in dark mode: CSS slides the knob right when aria-checked is "true".
+  function showState() {
     const dark = currentTheme() === 'dark';
-    button.textContent = dark ? '☀' : '🌙';
-    button.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
-    button.title = button.getAttribute('aria-label');
+    button.setAttribute('aria-checked', String(dark));
+    button.title = dark ? 'Dark mode (click for light)' : 'Light mode (click for dark)';
   }
 
   button.addEventListener('click', () => {
     const next = currentTheme() === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     save(next);
-    showIcon();
+    showState();
   });
-  systemDark.addEventListener('change', showIcon);   // device switched while no choice is saved
-  showIcon();
+  systemDark.addEventListener('change', showState);   // device switched while no choice is saved
+  showState();
 }

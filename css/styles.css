@@ -1,47 +1,47 @@
 /* ==========================================================================
    1. Design tokens
    ========================================================================== */
-/* Farm / agri-tech look: deep-green header and footer, green buttons and links,
-   a light green grid-paper page and white rounded cards. */
+/* Colours come from the AquaPlan logo: navy #01355F ("Aqua"), green #317612 ("Plan", leaves)
+   and blue #0188DB (water drop). Navy header and footer, green buttons, blue for water/rain. */
 :root {
-  --bg: #f6faf4;
-  --grid: #e2ecdd;
+  --bg: #f5f8f3;
+  --grid: #e3eadf;
   --surface: #ffffff;
-  --surface-2: #eff5ec;
-  --bar-bg: #14532d; /* header + footer background (deep green) */
-  --bar-border: #166534;
-  --bar-text: #f0fdf4;
-  --bar-muted: #bbf7d0;
-  --text: #142218;
-  --muted: #5b6b5f;
-  --border: #e2ecdd;
-  --primary: #16a34a;
-  --primary-hover: #15803d;
+  --surface-2: #eef3ec;
+  --bar-bg: #01355f; /* header + footer background (logo navy) */
+  --bar-border: #0a4778;
+  --bar-text: #ffffff;
+  --bar-muted: #b9cde0;
+  --text: #0f2236;
+  --muted: #5a6b7a;
+  --border: #e3eadf;
+  --primary: #317612;
+  --primary-hover: #275f0e;
   --primary-text: #ffffff;
-  --primary-shadow: rgb(22 163 74 / 0.45);
-  --btn-bg: #e2ecdd;
-  --btn-bg-hover: #cfdfc8;
-  --btn-text: #1a2e1f;
+  --primary-shadow: rgb(49 118 18 / 0.4);
+  --btn-bg: #e5ece2;
+  --btn-bg-hover: #d3dfce;
+  --btn-text: #0f2236;
   --danger: #dc2626;
-  --focus: #16a34a;
-  --code-text: #166534;
-  --code-bg: #dcfce7;
+  --focus: #0188db;
+  --code-text: #01355f;
+  --code-bg: #e0edf8;
 
   /* Status colours: text colour + light background for each plan status */
   --irrigate: #c2410c;
   --irrigate-bg: #ffedd5;
-  --skip: #1d4ed8;
-  --skip-bg: #dbeafe;
+  --skip: #0170b8;
+  --skip-bg: #dcefff;
   --monitor: #a16207;
   --monitor-bg: #fef9c3;
-  --ok: #15803d;
-  --ok-bg: #dcfce7;
+  --ok: #317612;
+  --ok-bg: #e3f2da;
   --neutral: #6b7280;
-  --neutral-bg: #eff5ec;
+  --neutral-bg: #eef3ec;
 
   /* Chart lines: past days and forecast days */
-  --chart-history: #0f766e;
-  --chart-forecast: #16a34a;
+  --chart-history: #01355f;
+  --chart-forecast: #0188db;
 
   /* Shapes and fonts */
   --radius: 24px;
@@ -49,7 +49,6 @@
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --font:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Khmer", monospace;
-  --font-logo: "Pacifico", cursive;
   --map-filter: none;
   color-scheme: light;
 }
@@ -57,41 +56,41 @@
 /* Dark theme: follows the device setting, unless the 🌙/☀ button chose one (data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a120d;
-    --grid: #142019;
-    --surface: #101b14;
-    --surface-2: #18271d;
-    --bar-bg: #133a22;
-    --bar-border: #1f5233;
-    --bar-text: #e7f5ea;
-    --bar-muted: #9fbfa8;
-    --text: #ecf5ee;
-    --muted: #9fb3a5;
-    --border: #1c2d22;
-    --primary: #16a34a;
-    --primary-hover: #22c55e;
+    --bg: #07111c;
+    --grid: #0f1c2a;
+    --surface: #0d1a28;
+    --surface-2: #142536;
+    --bar-bg: #012c4f;
+    --bar-border: #0a4778;
+    --bar-text: #ffffff;
+    --bar-muted: #a9bfd4;
+    --text: #e8f0f7;
+    --muted: #9fb2c4;
+    --border: #172a3d;
+    --primary: #317612;
+    --primary-hover: #3f8f1a;
     --primary-text: #ffffff;
-    --primary-shadow: rgb(22 163 74 / 0.35);
-    --btn-bg: #18271d;
-    --btn-bg-hover: #23382a;
-    --btn-text: #dcebdf;
+    --primary-shadow: rgb(49 118 18 / 0.35);
+    --btn-bg: #142536;
+    --btn-bg-hover: #1d3349;
+    --btn-text: #dce7f1;
     --danger: #f87171;
-    --code-text: #86efac;
-    --code-bg: #052e16;
+    --code-text: #8fc8f5;
+    --code-bg: #0b2a45;
 
     --irrigate: #fb923c;
     --irrigate-bg: #3b1d0b;
-    --skip: #60a5fa;
-    --skip-bg: #10233f;
+    --skip: #38a9f0;
+    --skip-bg: #0b2a45;
     --monitor: #facc15;
     --monitor-bg: #342a06;
-    --ok: #4ade80;
-    --ok-bg: #0f2e1b;
+    --ok: #6cc24a;
+    --ok-bg: #13290b;
     --neutral: #9ca3af;
-    --neutral-bg: #18271d;
+    --neutral-bg: #142536;
 
-    --chart-history: #5eead4;
-    --chart-forecast: #4ade80;
+    --chart-history: #8fc8f5;
+    --chart-forecast: #6cc24a;
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.5);
     --map-filter: brightness(0.8) contrast(1.1);
     color-scheme: dark;
@@ -101,41 +100,41 @@
 /* Same dark colours again, for when the user picks dark with the 🌙 button.
    (CSS can't share one block between a media query and a selector, so it is repeated.) */
 :root[data-theme="dark"] {
-  --bg: #0a120d;
-  --grid: #142019;
-  --surface: #101b14;
-  --surface-2: #18271d;
-  --bar-bg: #133a22;
-  --bar-border: #1f5233;
-  --bar-text: #e7f5ea;
-  --bar-muted: #9fbfa8;
-  --text: #ecf5ee;
-  --muted: #9fb3a5;
-  --border: #1c2d22;
-  --primary: #16a34a;
-  --primary-hover: #22c55e;
+  --bg: #07111c;
+  --grid: #0f1c2a;
+  --surface: #0d1a28;
+  --surface-2: #142536;
+  --bar-bg: #012c4f;
+  --bar-border: #0a4778;
+  --bar-text: #ffffff;
+  --bar-muted: #a9bfd4;
+  --text: #e8f0f7;
+  --muted: #9fb2c4;
+  --border: #172a3d;
+  --primary: #317612;
+  --primary-hover: #3f8f1a;
   --primary-text: #ffffff;
-  --primary-shadow: rgb(22 163 74 / 0.35);
-  --btn-bg: #18271d;
-  --btn-bg-hover: #23382a;
-  --btn-text: #dcebdf;
+  --primary-shadow: rgb(49 118 18 / 0.35);
+  --btn-bg: #142536;
+  --btn-bg-hover: #1d3349;
+  --btn-text: #dce7f1;
   --danger: #f87171;
-  --code-text: #86efac;
-  --code-bg: #052e16;
+  --code-text: #8fc8f5;
+  --code-bg: #0b2a45;
 
   --irrigate: #fb923c;
   --irrigate-bg: #3b1d0b;
-  --skip: #60a5fa;
-  --skip-bg: #10233f;
+  --skip: #38a9f0;
+  --skip-bg: #0b2a45;
   --monitor: #facc15;
   --monitor-bg: #342a06;
-  --ok: #4ade80;
-  --ok-bg: #0f2e1b;
+  --ok: #6cc24a;
+  --ok-bg: #13290b;
   --neutral: #9ca3af;
-  --neutral-bg: #18271d;
+  --neutral-bg: #142536;
 
-  --chart-history: #5eead4;
-  --chart-forecast: #4ade80;
+  --chart-history: #8fc8f5;
+  --chart-forecast: #6cc24a;
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.5);
   --map-filter: brightness(0.8) contrast(1.1);
   color-scheme: dark;
@@ -264,11 +263,15 @@ small {
 }
 
 .brand {
-  font-family: var(--font-logo);
-  font-weight: 400;
-  font-size: 1.5rem;
-  color: var(--bar-text);
+  display: flex;
+  align-items: center;
   text-decoration: none;
+}
+
+.brand__logo {
+  display: block;
+  height: 40px;
+  width: auto;
 }
 
 .nav {
@@ -1281,7 +1284,76 @@ select[aria-invalid="true"] {
 /* ==========================================================================
    18. Theme button
    ========================================================================== */
-.theme-toggle {
-  min-width: 32px;
-  padding: 0.2rem 0.5rem;
+/* A sliding switch: sun on the left (light), moon on the right (dark).
+   The white knob sits under the active icon, which turns black; the other icon stays white. */
+.theme-switch {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.theme-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: transform 0.25s ease;
+}
+
+.theme-switch[aria-checked="true"] .theme-switch__knob {
+  transform: translateX(30px); /* slide to the right side */
+}
+
+.theme-switch__icon {
+  position: absolute; /* drawn on top of the knob */
+  top: 7px;
+  width: 16px;
+  height: 16px;
+  color: #ffffff;
+  transition: color 0.25s ease;
+}
+
+.theme-switch__icon--sun {
+  left: 7px;
+  color: #000000; /* light mode: the knob is on the sun */
+}
+
+.theme-switch__icon--moon {
+  right: 7px;
+}
+
+.theme-switch[aria-checked="true"] .theme-switch__icon--sun {
+  color: #ffffff;
+}
+
+.theme-switch[aria-checked="true"] .theme-switch__icon--moon {
+  color: #000000;
+}
+
+.theme-switch__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch__knob,
+  .theme-switch__icon {
+    transition: none;
+  }
 }

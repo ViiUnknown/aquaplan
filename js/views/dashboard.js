@@ -44,7 +44,7 @@ export async function renderDashboard(ctx) {
             <a class="card field-card" href="#/fields/${field.id}">
               <h2 class="field-card__name">${field.name}</h2>
               <p class="meta">${cropLabel(field.cropType)} · ${formatNumber(field.areaHa)} ha</p>
-              <p class="meta">📍 ${field.locationName}</p>
+              <p class="meta">Location: ${field.locationName}</p>
               <div class="field-card__status" data-status-for="${field.id}">
                 <span class="spinner spinner--sm" aria-hidden="true"></span> <span class="muted">Checking weather…</span>
               </div>

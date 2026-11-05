@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AquaPlan – Farm Irrigation Planner</title>
   <meta name="description" content="AquaPlan tells farmers when to irrigate and how much water to apply, using live weather and evapotranspiration data.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <!-- Apply a saved light/dark choice before the page paints (avoids a flash of the wrong theme). -->
   <script>try { const t = localStorage.getItem('aquaplan-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Pacifico&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap">
   <!-- Leaflet: map for picking a field's location (tiles from OpenStreetMap) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
@@ -20,11 +21,15 @@
 <body>
   <header class="site-header">
     <div class="container site-header__inner">
-      <a class="brand" href="#/dashboard">aquaplan</a>
+      <a class="brand" href="#/dashboard"><img class="brand__logo" src="assets/logo-dark.png" alt="AquaPlan" width="150" height="40"></a>
       <nav class="nav" aria-label="Main">
         <a href="#/dashboard" data-nav="dashboard">Dashboard</a>
         <a href="#/fields/new" data-nav="new" class="btn btn--primary btn--sm">+ Add field</a>
-        <button class="btn btn--sm theme-toggle" type="button" data-theme-toggle>🌙</button>
+        <button class="theme-switch" type="button" role="switch" aria-checked="false" aria-label="Dark mode" data-theme-toggle>
+          <span class="theme-switch__knob"></span>
+          <span class="theme-switch__icon theme-switch__icon--sun"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+          <span class="theme-switch__icon theme-switch__icon--moon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>
+        </button>
       </nav>
     </div>
   </header>

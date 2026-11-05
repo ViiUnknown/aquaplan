@@ -92,7 +92,7 @@ export async function renderFieldForm(ctx, id = null) {
           <div class="map" data-map></div>
           <div class="map-bar">
             <p class="loc-selected" aria-live="polite"></p>
-            <button class="btn btn--sm" type="button" data-action="locate">📍 Use my location</button>
+            <button class="btn btn--sm" type="button" data-action="locate">Use my location</button>
           </div>
           <p class="error" data-error-for="location"></p>
           <div class="form-row">
@@ -214,9 +214,9 @@ export async function renderFieldForm(ctx, id = null) {
     if (!selectedLocation) {
       setHTML(selectedBox, html`<span class="muted">No location chosen yet. Tap the map.</span>`);
     } else if (selectedLocation.pending) {
-      setHTML(selectedBox, html`📍 <span class="muted"><span class="spinner spinner--sm" aria-hidden="true"></span> Finding the place name…</span>`);
+      setHTML(selectedBox, html`Location: <span class="muted"><span class="spinner spinner--sm" aria-hidden="true"></span> Finding the place name…</span>`);
     } else {
-      setHTML(selectedBox, html`📍 <strong>${selectedLocation.label}</strong> <span class="muted">(${coordinateLabel(selectedLocation.lat, selectedLocation.lon)})</span>`);
+      setHTML(selectedBox, html`Location: <strong>${selectedLocation.label}</strong> <span class="muted">(${coordinateLabel(selectedLocation.lat, selectedLocation.lon)})</span>`);
     }
   }
   showSelected();

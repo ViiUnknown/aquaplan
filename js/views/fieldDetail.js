@@ -42,7 +42,7 @@ export async function renderFieldDetail(ctx, id) {
         <div>
           <h1>${field.name}</h1>
           <p class="meta">${cropLabel(field.cropType)} · ${formatNumber(field.areaHa)} ha · planted ${formatDate(field.plantingDate)}</p>
-          <p class="meta">📍 ${field.locationName}</p>
+          <p class="meta">Location: ${field.locationName}</p>
         </div>
         <div class="actions">
           <a class="btn" href="#/fields/${field.id}/records">Record watering</a>

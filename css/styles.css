@@ -290,9 +290,14 @@ small {
 }
 
 main {
-  padding-top: 2.5rem; /* space between the header bar and the page title */
-  padding-bottom: 2rem;
   flex: 1; /* takes all the spare height, which pushes the footer down */
+}
+
+/* "main.container", not just "main": <main> also has the .container class, whose
+   "padding: 0 16px" would otherwise win and remove this space. */
+main.container {
+  padding-top: 2.5rem; /* space between the header bar and the page title */
+  padding-bottom: 2.5rem; /* space above the footer */
 }
 
 main:focus {

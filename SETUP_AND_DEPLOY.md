@@ -217,7 +217,7 @@ If you still see the old version, press **`Ctrl+F5`** (hard refresh).
 | Live site shows **404** | Pages not enabled (Step 2), the first build isn't finished (Step 3), or `index.html` isn't in the repo root |
 | Live site works but looks old | Hard refresh `Ctrl+F5`. Check `gh api repos/ViiUnknown/aquaplan/pages/builds/latest` |
 | Works locally but a file is missing online | File names are **case-sensitive** on GitHub Pages: `fieldForm.js` ≠ `FieldForm.js` |
-| Changes on `main` rejected for teammates | Expected: `main` is protected. Use a branch and a pull request (TEAMMATE_GITHUB_SETUP.md) |
+| Changes on `main` rejected for teammates | Expected: `main` is protected. Use a branch and a pull request |
 
 Press **F12** in the browser. The **Console** shows errors, and the **Network** tab shows every request to MockAPI and Open-Meteo with its status.
 

@@ -1,6 +1,3 @@
-// Shared fetch wrapper: turns network failures and non-2xx responses into
-// errors with a `code` / `status` that the views can explain to the user.
-
 export async function fetchJson(url, options = {}) {
   let response;
   try {

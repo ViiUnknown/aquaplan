@@ -1,10 +1,13 @@
-# AquaPlan – Run, Connect MockAPI, and Deploy
+# AquaPlan – Setup and Run (local only)
 
-This guide gets AquaPlan running on your computer, connects it to MockAPI, and publishes it on
-**GitHub Pages** so anyone can open it with a link.
+AquaPlan runs **only on your own computer**. Two small local servers work together:
+
+- a **web server** that serves the website files, and
+- a **Mockoon** server that stores the data (accounts, fields, records, contact messages).
+
+There is no public live site. To demo the app, run both servers on the presenting laptop.
 
 **Repo:** https://github.com/ViiUnknown/aquaplan
-**Live site (after Part 3):** https://viiunknown.github.io/aquaplan/
 
 Type commands in the **VS Code terminal** (`` Ctrl+` ``), inside the project folder.
 
@@ -13,21 +16,20 @@ Type commands in the **VS Code terminal** (`` Ctrl+` ``), inside the project fol
 ## How the pieces fit together
 
 ```
-  Your computer (development)              Internet (live site)
-  ───────────────────────────              ─────────────────────
-  local server  ──►  browser               GitHub Pages ──► anyone's browser
-  (npx serve)        localhost:3000        viiunknown.github.io/aquaplan
-                         │                                   │
-                         └──────── both call ────────────────┘
-                                     │            │
-                              Open-Meteo     MockAPI.io
-                              (weather)      (fields + records)
+  Your computer
+  ─────────────────────────────────────────────────────────────
+  web server (npm start)  ──►  browser: http://localhost:3000
+                                   │                 │
+                                   │ fetch()         │ fetch()
+                                   ▼                 ▼
+                   Mockoon (npm run api)        Open-Meteo (internet)
+                   http://localhost:3001/api    weather + place search
+                   users · fields · records · messages
 ```
 
-- There is **no backend code to write**. All the code runs in the browser.
-- **GitHub Pages** only hosts the files (HTML, CSS, JS).
-- **MockAPI** stores the data. **Open-Meteo** provides the weather.
-  The browser talks to both directly, both locally and on the live site.
+- There is **no backend code to write**. All of AquaPlan's code runs in the browser.
+- **Mockoon** is a mock REST API defined in `mockoon/aquaplan.json`. It answers GET, POST, PUT and DELETE.
+- **Open-Meteo** (weather) and the **OpenStreetMap** map still come from the internet, so you need a connection.
 
 ---
 
@@ -36,171 +38,102 @@ Type commands in the **VS Code terminal** (`` Ctrl+` ``), inside the project fol
 ```
 aquaplan/
 ├── index.html                 the one HTML page (single-page app)
-├── css/styles.css             all styles (mobile first, light + dark)
+├── css/styles.css             all styles (light + dark)
+├── assets/                    logo, favicon, background photos
+├── mockoon/aquaplan.json      ⚙️ the Mockoon environment (the data API)
 ├── js/
-│   ├── main.js                start-up + hash router (#/dashboard, #/fields/3 …)
-│   ├── config.js              ⚙️ MockAPI URL – the only file you edit to connect
-│   ├── state.js               small shared state ("Field saved." messages)
+│   ├── main.js                start-up + hash router (#/home, #/dashboard, #/fields/:id …)
+│   ├── auth.js                accounts: log in, register, roles, field access
+│   ├── config.js              API_BASE = http://localhost:3001/api
+│   ├── menu.js                ☰ menu
+│   ├── theme.js               light/dark switch
+│   ├── state.js               one-time "Field saved." messages
 │   ├── api/
 │   │   ├── http.js            fetch wrapper with friendly errors
 │   │   ├── openMeteo.js       place search + weather (with 1-hour cache)
-│   │   └── mockApi.js         create/read/update/delete for fields + records
-│   ├── models/                ← pure calculation code (no DOM, no fetch)
-│   │   ├── constants.js       crop table (Kc), soils, defaults
-│   │   ├── kc.js              crop coefficient by growth stage
-│   │   ├── upland.js          soil-moisture deficit model
-│   │   ├── rice.js            paddy water-depth model
-│   │   ├── plan.js            7-day plan: IRRIGATE / SKIP / MONITOR / OK
-│   │   └── compare.js         usual vs actual vs recommended
-│   ├── services/
-│   │   ├── fieldService.js    loads field + records + weather, runs the model
-│   │   └── demoData.js        "Load demo data" button
-│   ├── utils/
-│   │   ├── date.js            "YYYY-MM-DD" date helpers
-│   │   ├── format.js          mm ↔ m³, cm ↔ mm, number/date formatting
-│   │   ├── validation.js      form rules
-│   │   └── ui.js              safe HTML, loading/error states, form helpers
-│   └── views/                 one file per page
-│       ├── dashboard.js       #/dashboard
-│       ├── fieldForm.js       #/fields/new and #/fields/:id/edit
-│       ├── fieldDetail.js     #/fields/:id
-│       ├── records.js         #/fields/:id/records
-│       ├── components.js      shared badges / status cards
-│       └── chart.js           SVG line chart (no library)
-├── tests/
-│   ├── models.test.js         22 tests for the calculations
-│   └── index.html             run the tests in a browser
-├── package.json               shortcuts: npm start, npm test (optional)
-└── .nojekyll                  tells GitHub Pages to serve files as they are
+│   │   ├── nominatim.js       map point → place name
+│   │   └── mockoon.js         create/read/update/delete for users, fields, records, messages
+│   ├── models/                pure calculation code (no DOM, no fetch)
+│   ├── services/              field + records + weather → plan; demo data
+│   ├── utils/                 dates, units, validation, safe HTML
+│   └── views/                 one file per page (pages.js = Home/Purpose/About/Contact, howItWorks.js, auth.js = login/register, admin.js)
+├── tests/                     28 tests (npm test, or open /tests/ in the browser)
+└── package.json               shortcuts: npm start, npm run api, npm test
 ```
 
 ---
 
-# Part 1 – Run AquaPlan on your computer (local server)
+# Part 1 – One-time setup
 
-### Why do I need a server?
-AquaPlan uses **ES modules** (`import` / `export`). Browsers block modules on pages opened by
-double-clicking `index.html` (`file://…`). A small local server fixes this. It only serves your files.
+1. **Node.js** – check with `node --version`. If it's missing: `winget install --id OpenJS.NodeJS.LTS -e`, then reopen the terminal.
+2. **Mockoon** – either
+   - install the **Mockoon desktop app** from https://mockoon.com/download/, **or**
+   - use the **CLI** through `npm run api` (downloads automatically the first time).
 
-### Option A – VS Code Live Server (easiest)
-1. In VS Code, open **Extensions** (`Ctrl+Shift+X`), search **Live Server** (by Ritwick Dey), and click **Install**.
-2. Right-click `index.html` and choose **Open with Live Server**.
-3. The browser opens at `http://127.0.0.1:5500`, and it reloads every time you save a file.
+Details: **MOCKOON_SETUP.md**.
 
-### Option B – Node.js
-Needs Node.js (`node --version`). If it's missing: `winget install --id OpenJS.NodeJS.LTS -e`, then reopen the terminal.
+---
+
+# Part 2 – Run AquaPlan
+
+Open **two terminals** (click **+** in the VS Code terminal panel for the second one).
+
+**Terminal 1 – data server (Mockoon)**
+```powershell
+npm run api
+```
+✅ You see `Server started on port 3001`.
+(Using the desktop app instead? Open `mockoon/aquaplan.json` and press ▶ Start.)
+
+**Terminal 2 – website**
 ```powershell
 npm start
 ```
-Open the address it prints (usually **http://localhost:3000**). Stop the server with `Ctrl+C`.
+✅ Open **http://localhost:3000**.
 
-### Option C – Python
-```powershell
-python -m http.server 5500
-```
-Open **http://localhost:5500**. Stop the server with `Ctrl+C`.
+Stop either server with **Ctrl+C** in its terminal.
 
-✅ **You should see** the AquaPlan header and a box saying **"Connect MockAPI to get started"**.
-That's correct: Part 2 connects it.
+### Why a web server and not a double-click?
+AquaPlan uses **ES modules** (`import` / `export`). Browsers block modules on pages opened by
+double-clicking `index.html` (`file://…`). The web server only serves your files.
+Other options: VS Code **Live Server**, or `python -m http.server 3000`.
+
+### First run
+1. Open **Dashboard** from the ☰ menu. ✅ You are sent to **Log in** (the dashboard needs an account).
+2. Click **Create one** and register (or log in as the admin from MOCKOON_SETUP.md §5b).
+   ✅ "No fields yet" with two buttons.
+3. Click **Load demo data**. ✅ Three Cambodian demo fields appear with today's status. They belong to your account.
+4. Optional: open http://localhost:3001/api/fields to see the saved data as JSON.
+
+> Mockoon keeps data **in memory**. When you restart it, the data is empty again (only the starting admin
+> account is left) – register and click **Load demo data** before each demo. See MOCKOON_SETUP.md §5.
 
 ### Run the calculation tests
 ```powershell
 npm test
 ```
-✅ `22/22 passed`. (Without Node: start the server and open `/tests/` in the browser.)
+✅ `28/28 passed`. (Or open http://localhost:3000/tests/ while the website server is running.)
 
 ---
 
-# Part 2 – Connect MockAPI
+# Part 3 – Share changes with the team (Git)
 
-**Who:** one person (the owner) creates the MockAPI project. Everyone else just pulls the updated `js/config.js`.
+The code (including `mockoon/aquaplan.json`) goes through Git like everything else:
 
-### Step 1 – Create the MockAPI project and resources
-In short:
-1. Sign in at **https://mockapi.io** and create a project called `aquaplan` with API prefix `/api/v1`.
-2. Create a resource named **`fields`** and one named **`records`**, with the properties listed in [REQUIREMENTS.md](REQUIREMENTS.md) §10 (fields also need `pumpM3PerHour`).
-3. Set auto-generated items to **0** for both.
-
-### Step 2 – Copy your project URL
-At the top of your MockAPI project page you'll see something like:
-```
-https://6712abcd1234ef.mockapi.io/api/v1
-```
-
-### Step 3 – Paste it into `js/config.js`
-Open `js/config.js` and replace the placeholder:
-```js
-// before
-export const MOCKAPI_BASE = 'https://YOUR-PROJECT-ID.mockapi.io/api/v1';
-
-// after (use YOUR url)
-export const MOCKAPI_BASE = 'https://6712abcd1234ef.mockapi.io/api/v1';
-```
-Save the file. No trailing slash at the end.
-
-### Step 4 – Check it works
-1. Refresh the app in the browser.
-   ✅ You should now see **"No fields yet"** with two buttons.
-2. Click **Load demo data**.
-   ✅ Three Cambodian demo fields appear, each with today's irrigation status.
-3. Optional: open `https://<your-id>.mockapi.io/api/v1/fields` in a new tab. You'll see the saved data as JSON.
-
-### Step 5 – Share it with the team
-`js/config.js` is code, so it goes through Git like everything else (see Part 3, Step 1).
-After it's merged, teammates run `git switch main` then `git pull` and are connected too.
-
-> ⚠️ The MockAPI URL is visible to anyone who opens the website (it's in the JavaScript).
-> That's normal for this course prototype. Only store demo data, never private information.
-
----
-
-# Part 3 – Deploy to GitHub Pages
-
-The repo is **public**, so GitHub Pages is free. The owner (**ViiUnknown**) does this once.
-After that the site **updates automatically** every time something is merged into `main`.
-
-### Step 1 – Get the code into `main`
-Recommended (same flow as the team): use a branch and a pull request.
 ```powershell
-gh auth status                              # must show ViiUnknown as active
-git switch -c feature/starter-app
+git switch -c my-change
 git add .
-git status                                  # check the list of files
-git commit -m "Add AquaPlan app: router, views, models, tests, setup guide"
-git push -u origin feature/starter-app
-gh pr create --fill
-gh pr merge --merge --delete-branch --admin # you are the owner, so you merge as admin
-git switch main
-git pull
+git status                      # check the list of files
+git commit -m "Describe the change"
+git push -u origin my-change
+gh pr create --fill             # the owner (ViiUnknown) reviews and merges
 ```
+Teammates then run `git switch main` and `git pull`. Each person runs the two servers on their own
+computer, so each person has their **own** data.
 
-### Step 2 – Turn on GitHub Pages (one time)
-```powershell
-gh api -X POST repos/ViiUnknown/aquaplan/pages -f "source[branch]=main" -f "source[path]=/"
-```
-✅ You'll see JSON that includes `"html_url": "https://viiunknown.github.io/aquaplan/"`.
-❌ `409 … already enabled` means it's already on. Skip to Step 3.
-
-### Step 3 – Wait for the first deploy (about 1–2 minutes)
-```powershell
-gh api repos/ViiUnknown/aquaplan/pages/builds/latest --jq "{status, created_at}"
-```
-Repeat until `status` is **`built`**.
-
-### Step 4 – Open the live site
-```powershell
-Start-Process "https://viiunknown.github.io/aquaplan/"
-```
-✅ The dashboard loads with your MockAPI data (if Part 2 is done and merged).
-
-### Step 5 – Show the link on the repo page (optional)
-```powershell
-gh repo edit ViiUnknown/aquaplan --homepage "https://viiunknown.github.io/aquaplan/"
-```
-
-### Updating the live site later
-Nothing extra to do. Every pull request you merge into `main` redeploys the site in about 1 minute.
-If you still see the old version, press **`Ctrl+F5`** (hard refresh).
+> The app is local only. If GitHub Pages was turned on earlier, the owner can switch it off in
+> **Settings → Pages**, or with `gh api -X DELETE repos/ViiUnknown/aquaplan/pages`.
+> A Pages site can't reach `localhost`, so it would show "Can't reach AquaPlan's data server".
 
 ---
 
@@ -208,27 +141,25 @@ If you still see the old version, press **`Ctrl+F5`** (hard refresh).
 
 | Problem | Cause → Fix |
 |---|---|
-| Blank page locally, console says *"Cannot use import statement"* or a CORS error | Opened by double-click (`file://`). Use a local server (Part 1) |
-| "Connect MockAPI to get started" still shows | `js/config.js` still has `YOUR-PROJECT-ID`, or the change isn't merged/pulled yet |
-| "Not found" on every page | Wrong MockAPI URL or prefix. Compare with your MockAPI dashboard (it must end in `/api/v1`, no slash) |
-| "Network error" | No internet, or a typo in the URL (`https://`) |
-| "The service is busy (too many requests)" | MockAPI rate limit. Wait a minute. The weather cache helps |
-| Weather unavailable on one field | Open-Meteo hiccup. Click **Try again** |
-| Live site shows **404** | Pages not enabled (Step 2), the first build isn't finished (Step 3), or `index.html` isn't in the repo root |
-| Live site works but looks old | Hard refresh `Ctrl+F5`. Check `gh api repos/ViiUnknown/aquaplan/pages/builds/latest` |
-| Works locally but a file is missing online | File names are **case-sensitive** on GitHub Pages: `fieldForm.js` ≠ `FieldForm.js` |
+| "Can't reach AquaPlan's data server…" | Mockoon isn't running. Start it (Part 2, Terminal 1), then click **Try again** |
+| Blank page, console says *"Cannot use import statement"* | Opened by double-click (`file://`). Use `npm start` |
+| `Port 3000/3001 is already in use` | That server is already running in another terminal. Use it, or stop it with Ctrl+C |
+| CORS error in the console | CORS is off in Mockoon. Environment **Settings → CORS** on (it is on in `aquaplan.json`) |
+| My fields (or my account) disappeared | Mockoon was restarted, so only the starting admin account is left. Register again, then click **Load demo data** |
+| "Not found" for a field | The field was deleted, or Mockoon restarted |
+| Weather unavailable on one field | No internet, or an Open-Meteo hiccup. Click **Try again** |
 | Changes on `main` rejected for teammates | Expected: `main` is protected. Use a branch and a pull request |
 
-Press **F12** in the browser. The **Console** shows errors, and the **Network** tab shows every request to MockAPI and Open-Meteo with its status.
+Press **F12** in the browser. The **Console** shows errors, and the **Network** tab shows every request
+to `localhost:3001` (Mockoon) and Open-Meteo with its status.
 
 ---
 
 ## Checklist
 
-- [ ] App runs locally (Part 1) and `npm test` shows 22/22
-- [ ] MockAPI project with `fields` and `records` created
-- [ ] `js/config.js` has the real MockAPI URL
+- [ ] `npm test` shows 28/28
+- [ ] `npm run api` (or the Mockoon app) shows the server on port 3001
+- [ ] http://localhost:3001/api/fields shows `[]` (or your data)
+- [ ] `npm start` and http://localhost:3000 opens
 - [ ] "Load demo data" works
-- [ ] Code merged into `main` through a pull request
-- [ ] GitHub Pages enabled and showing `built`
-- [ ] https://viiunknown.github.io/aquaplan/ opens and shows the data
+- [ ] Before a demo: both servers running, demo data loaded

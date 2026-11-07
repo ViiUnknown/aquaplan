@@ -28,9 +28,9 @@ There are two calculation models:
 - Vanilla HTML, CSS and JavaScript (ES modules). **No frontend framework.**
 - The chart is hand-drawn SVG (no chart library). The location map uses **Leaflet 1.9.4** with OpenStreetMap tiles.
 - External APIs: **Open-Meteo** (weather and geocoding), **Nominatim** (map point → place name),
-  **OpenStreetMap** tiles, and **MockAPI.io** (data storage). The browser Geolocation API is used for "use my location".
-- No login. All users share one MockAPI dataset (demo use only).
-- Deployed as static files on **GitHub Pages**.
+  **OpenStreetMap** tiles, and a local **Mockoon** mock REST API (data storage, `mockoon/aquaplan.json`). The browser Geolocation API is used for "use my location".
+- No login. Each computer that runs Mockoon has its own data (demo use only).
+- Runs **locally only**: website on `localhost:3000`, Mockoon on `localhost:3001`. No public deployment.
 
 ### Deadlines (from the course guidelines and progress update)
 - Final submission: **26 Nov 2026**. Presentation: **27 Nov 2026** (15 min + 5 min Q&A).
@@ -52,13 +52,16 @@ There are two calculation models:
 | FR-8 | **Upland:** keep a daily soil-water balance and recommend irrigation when the deficit reaches RAW (§5). |
 | FR-9 | Show a 7-day plan with one status per day: **IRRIGATE / SKIP (rain) / MONITOR / OK** (§7). |
 | FR-10 | Show water amounts in **cm** (rice) and **m³** (`m³ = mm × areaHa × 10`), and in **pump hours** when the pump flow is known (`hours = m³ ÷ m³ per hour`). Amounts are stored in mm. |
-| FR-11 | Show a chart of the rice water depth (history plus projection, with refill and target lines). |
+| FR-11 | Show a chart of the rice water depth (history plus projection, with refill and target lines). The dashed (next 7 days) line starts at **this morning's value** – for rice, the depth the farmer measured – so a low reading stays visible. On a "Water today" day the plan assumes the water is added, so the line **jumps** to the "fill to" level (rice) or **drops** to 0 (upland) at that day. |
 | FR-12 | Create, read, update and delete **irrigation records** and **depth readings**. |
 | FR-13 | Compare the farmer's **usual** amount and **actual** recorded amounts against the **recommended** amount (§9). |
 | FR-14 | Dashboard listing every field with its crop, today's status and the next recommended action. |
 | FR-15 | Special statuses: **Not planted yet** (planting date in the future) and **Season finished** (past the total season length). |
 | FR-16 | Store an optional **pump flow** (m³/hour) per field. Offer a helper that works it out from the seconds needed to fill a 200 L drum (`m³/h = 720 ÷ seconds`). |
 | FR-17 | Record irrigation in the unit the farmer can measure: rice in **cm** or **pump hours**; upland crops in **pump hours** only (water soaks into the soil, so it can't be measured in cm). |
+| FR-19 | **Accounts:** register (name, email, password ≥ 8 with a letter and a number, repeated) and log in. Passwords are stored as SHA-256(salt + password). The session lasts until the tab is closed. |
+| FR-20 | **Roles:** `user` sees and manages only fields with `ownerId` = their id; `admin` also opens `#/admin` to change roles, delete users (and their fields and records), list all fields and read/delete contact messages. An admin can't change their own role or delete themself. |
+| FR-21 | Dashboard and field pages need a login; other pages are public. Opening a protected page while logged out goes to `#/login` and returns there after logging in. |
 | FR-18 | Light and dark theme: follows the device setting, with a toggle in the header that is remembered (`localStorage`). |
 
 ## 3. Non-Functional Requirements
@@ -220,11 +223,11 @@ Field-level statuses that replace the plan: **Not planted yet**, **Season finish
 | Seepage | 2–6 mm/day (rice) |
 | Refill / target / bund | `0 ≤ refill < target ≤ bund ≤ 300` (rice) |
 | Pump flow | Optional, 1–1000 m³/hour. Required when an amount is entered in pump hours |
-| Usual amount | Optional, ≥ 0. Entered in cm (rice) or pump hours, stored as mm |
+| Usual amount | Optional, ≥ 0. Entered in cm (rice) or pump hours, stored as mm. Rice: at most the bund (field wall) height |
 | Usual interval | Optional, integer 1–60 days (required if usual amount is set) |
 | Record date | Required, not in the future, not before the planting date |
-| Irrigation amount | Required, > 0. Entered in cm (rice) **or** pump hours (≤ 24 per record), stored as mm |
-| Depth reading | Required, 0–30 cm (stored as mm) |
+| Irrigation amount | Required, > 0. Entered in cm (rice, at most the bund height – more would flow over the wall) **or** pump hours (≤ 24 per record), stored as mm |
+| Depth reading | Required, 0–30 cm and at most the bund height (stored as mm) |
 | Note | Optional, at most 200 characters |
 
 Show errors next to each input, and keep the submit button from saving until every field is valid.
@@ -236,7 +239,8 @@ Show errors next to each input, and keep the submit button from saving until eve
 - **Usual:** the farmer's habit, stored on the field as `usualAmountMm` per irrigation and `usualIntervalDays`.
   `usualWeeklyMm = usualAmountMm × 7 ÷ usualIntervalDays`
 - **Recommended:** the total of IRRIGATE amounts in the 7-day plan. On each irrigation record, the
-  recommendation at the time it was created is saved as `recommendedMm`.
+  advice for that date at the time it was created is saved as `recommendedMm`: the IRRIGATE amount,
+  or 0 if the day was OK / MONITOR / SKIP (judged before that day's recorded watering).
 - **Actual:** `amountMm` from irrigation records.
 
 Views:
@@ -245,7 +249,7 @@ Views:
 
 ---
 
-## 10. Data Model (MockAPI.io, 2 resources)
+## 10. Data Model (Mockoon, 3 CRUD routes: `fields`, `records`, `messages`)
 
 ### `fields`
 ```json
@@ -273,7 +277,7 @@ Views:
 ```
 Rice-only properties are `null` for upland crops, and the upland-only properties (`rootDepthM`, `p`) are `null` for rice.
 `pumpM3PerHour` is `null` when the farmer hasn't entered a pump flow. Every property is always sent
-(with `null` for "not set"), because MockAPI fills missing schema properties with fake values.
+(with `null` for "not set"), so a stored field always has the same shape. Mockoon generates `id` (a UUID string) on POST.
 
 ### `records`
 ```json
@@ -289,8 +293,13 @@ Rice-only properties are `null` for upland crops, and the upland-only properties
 }
 ```
 `type` is `"irrigation"` (uses `amountMm`) or `"depthReading"` (uses `depthMm`).
-Fetch the records for one field with `GET /records?fieldId=1`. MockAPI matches filters partially
-("contains"), so keep only exact `fieldId` matches in JS, and treat a 404 on a list as an empty list.
+Fetch the records for one field with `GET /records?fieldId=…`, then keep only exact `fieldId` matches in JS
+(so the app doesn't depend on how the server filters). A 404 on a list is treated as an empty list.
+
+### `messages` (contact form)
+```json
+{ "id": "…", "name": "Dara", "email": "dara@example.com", "message": "When should I water?", "sentAt": "2026-11-05T09:00:00.000Z" }
+```
 
 Architecture and diagrams: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -323,12 +332,13 @@ GET https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon
 GET https://tile.openstreetmap.org/{z}/{x}/{y}.png      (loaded by Leaflet)
 ```
 
-**MockAPI** (base URL from your MockAPI project, e.g. `https://<id>.mockapi.io/api/v1`)
+**Mockoon** (local, base URL `http://localhost:3001/api`, set in `js/config.js`)
 ```
 GET    /fields            POST   /fields
 GET    /fields/:id        PUT    /fields/:id      DELETE /fields/:id
 GET    /records?fieldId=  POST   /records
 PUT    /records/:id       DELETE /records/:id
+POST   /messages
 ```
 Deleting a field must also delete its records (loop over them and send DELETE for each).
 
@@ -339,17 +349,19 @@ Deleting a field must also delete its records (loop over them and send DELETE fo
 ```
 FinalProject/
 ├── index.html
+├── mockoon/aquaplan.json   # Mockoon environment: the local data API
 ├── css/styles.css           # light + dark themes, responsive layout
 ├── js/
 │   ├── main.js              # start-up + hash router
 │   ├── theme.js             # light/dark toggle (saved in localStorage)
-│   ├── config.js            # MockAPI base URL, time zone, cache time
+│   ├── menu.js              # ☰ menu
+│   ├── config.js            # Mockoon base URL (API_BASE), time zone, cache time
 │   ├── state.js             # one-time "flash" messages between pages
 │   ├── api/
 │   │   ├── http.js          # fetchJson(): friendly network / HTTP errors
 │   │   ├── openMeteo.js     # geocode(), getWeather() (+ sessionStorage cache)
 │   │   ├── nominatim.js     # reverseGeocode() for map clicks (cached)
-│   │   └── mockApi.js       # CRUD for fields and records
+│   │   └── mockoon.js       # CRUD for users, fields, records and messages
 │   ├── models/              # pure functions – no DOM, no fetch
 │   │   ├── constants.js     # crop table, soil AWC, defaults
 │   │   ├── kc.js            # getKc(crop, dsp), seasonLength()
@@ -365,7 +377,8 @@ FinalProject/
 │   │   ├── fieldForm.js
 │   │   ├── fieldDetail.js
 │   │   ├── records.js
-│   │   ├── components.js    # status badges, status card, pump-flow row, setup notice
+│   │   ├── components.js    # status badges, status card, pump-flow row
+│   │   ├── pages.js         # Home, Our purpose, How it works, About us, Contact us
 │   │   └── chart.js         # SVG line chart
 │   └── utils/
 │       ├── date.js          # "YYYY-MM-DD" helpers
@@ -373,7 +386,7 @@ FinalProject/
 │       ├── format.js        # mm ↔ m³, cm ↔ mm, pump hours, formatting
 │       └── ui.js            # html`` escaping, loading/error states, form helpers
 └── tests/
-    ├── models.test.js       # 24 tests: T1–T8, plan, validation, pump hours (npm test)
+    ├── models.test.js       # 28 tests: T1–T8, plan, validation (incl. bund limits), pump hours, contact form, accounts (npm test)
     └── index.html           # same tests in the browser
 ```
 
@@ -399,12 +412,12 @@ FinalProject/
 
 | # | Milestone | Done when |
 |---|---|---|
-| M1 | Setup | Folders created, MockAPI resources made, both API wrappers return data in the console |
+| M1 | Setup | Folders created, Mockoon environment made, both API wrappers return data in the console |
 | M2 | Field management | Field CRUD, location search and validation all work |
 | M3 | Weather | Field detail page shows 7-day weather, with loading and error states |
 | M4 | Models | Kc, upland and rice models pass tests T1–T8. 7-day plan table shown |
 | M5 | Records | Irrigation and depth-reading CRUD done. Comparison view done |
-| M6 | Polish | Rice chart, dashboard cards, responsive layout tested on a phone, deployed |
+| M6 | Polish | Rice chart, dashboard cards, responsive layout tested on a phone, runs locally with Mockoon |
 
 ## 15. Future Enhancements (not required)
 AWD rice mode, roots that deepen over the season, more crops, Khmer translation, user accounts

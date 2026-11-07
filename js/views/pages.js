@@ -1,7 +1,6 @@
-// Information pages, each with its own address:
-//   #/home  #/purpose  #/how-it-works  #/about  #/contact
+// Information pages: #/home, #/purpose, #/about and #/contact (How it works has its own file)
 
-import { createMessage } from '../api/mockApi.js';
+import { createMessage } from '../api/mockoon.js';
 import { validateContact } from '../utils/validation.js';
 import { html, setHTML, showFieldErrors, setBusy, textValue, friendlyError } from '../utils/ui.js';
 
@@ -15,18 +14,20 @@ const TEAM = [
 ];
 
 const PURPOSES = [
-  { title: 'Save water and fuel', text: 'Many farmers water on a fixed schedule. When rain is coming, that water and the diesel to pump it are wasted.' },
-  { title: 'Protect the harvest', text: 'Too little water at the wrong time stresses the crop. The plan warns you before the field gets too dry.' },
-  { title: 'Simple units', text: 'Advice is given in centimetres of water for paddy rice and in hours of pumping, not in formulas.' },
+  {
+    title: 'Save water and fuel',
+    text: 'Many farmers water on a fixed schedule. When rain is coming, that water and the diesel to pump it are wasted.',
+  },
+  {
+    title: 'Protect the harvest',
+    text: 'Too little water at the wrong time stresses the crop. The plan warns you before the field gets too dry.',
+  },
+  {
+    title: 'Simple units',
+    text: 'Advice is given in centimetres of water for paddy rice and in hours of pumping, not in formulas.',
+  },
 ];
 
-const STEPS = [
-  { title: 'Add your field', text: 'Choose the crop, the soil, the size and the planting date, then tap the field on the map.' },
-  { title: 'Check the 7-day plan', text: 'AquaPlan reads the rain forecast and how fast the crop uses water, and tells you which days to water and how much.' },
-  { title: 'Record your watering', text: 'Write down when you watered. The plan updates, and you can compare your usual amount with what was needed.' },
-];
-
-// Cards on the home page that lead to the other pages.
 const HOME_LINKS = [
   { href: '#/purpose', title: 'Our purpose', text: 'Why we built AquaPlan.' },
   { href: '#/how-it-works', title: 'How it works', text: 'Three steps from your field to a watering plan.' },
@@ -36,7 +37,6 @@ const HOME_LINKS = [
 
 const initials = name => name.split(' ').map(part => part[0]).join('');
 
-/** Shared page header: title + one line of introduction. */
 const pageHead = (title, intro) => html`
   <div class="page-head">
     <div>
@@ -53,7 +53,10 @@ export async function renderHome({ container }) {
       <div class="home-hero">
         <img class="home-hero__logo" src="assets/logo-dark.png" alt="" width="300" height="80">
         <h1 class="home-hero__title">Know when to water your field, and how much.</h1>
-        <p class="home-hero__text">AquaPlan combines the weather forecast with your crop and soil to make a 7-day watering plan for each of your fields.</p>
+        <p class="home-hero__text">
+          AquaPlan combines the weather forecast with your crop and soil to make a 7-day watering plan
+          for each of your fields.
+        </p>
         <div class="actions actions--center">
           <a class="btn btn--primary" href="#/dashboard">Open dashboard</a>
         </div>
@@ -87,26 +90,6 @@ export async function renderPurpose({ container }) {
     </section>`);
 }
 
-// ---------- #/how-it-works ----------
-
-export async function renderHowItWorks({ container }) {
-  setHTML(container, html`
-    <section class="view">
-      ${pageHead('How it works', 'From your field to a 7-day watering plan in three steps.')}
-      <ol class="info-grid">
-        ${STEPS.map((step, i) => html`
-          <li class="card">
-            <span class="step-number" aria-hidden="true">${i + 1}</span>
-            <h2>${step.title}</h2>
-            <p>${step.text}</p>
-          </li>`)}
-      </ol>
-      <div class="actions">
-        <a class="btn btn--primary" href="#/dashboard">Try it: open the dashboard</a>
-      </div>
-    </section>`);
-}
-
 // ---------- #/about ----------
 
 export async function renderAbout({ container }) {
@@ -135,8 +118,10 @@ export async function renderContact({ container }) {
     <section class="view view--narrow">
       ${pageHead('Contact us', 'Questions or ideas? Send us a message.')}
       <form class="card form" novalidate>
-        <p class="hint">This is a class project: messages are stored on a public demo server,
-           so don't include private information.</p>
+        <p class="hint">
+          This is a class project: messages are saved on the AquaPlan data server, where the admin
+          reads them. Please don't include private information.
+        </p>
         <div class="form-grid">
           <div class="form-row">
             <label for="c-name">Your name</label>
@@ -155,7 +140,9 @@ export async function renderContact({ container }) {
           <p class="error" data-error-for="message"></p>
         </div>
         <p class="error form-error" data-contact-error></p>
-        <div class="flash flash--success" data-contact-success hidden role="status">Thank you! Your message was sent.</div>
+        <div class="flash flash--success" data-contact-success hidden role="status">
+          Thank you! Your message was sent.
+        </div>
         <div class="actions">
           <button class="btn btn--primary" type="submit">Send message</button>
         </div>

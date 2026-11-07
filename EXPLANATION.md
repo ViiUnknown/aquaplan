@@ -24,15 +24,17 @@ A website where a farmer:
  └──────┬──────────────┬───────┘
         │ fetch()      │ fetch()
         ▼              ▼
- ┌──────────────┐  ┌──────────────────┐
- │ Open-Meteo   │  │ MockAPI.io       │
- │ (weather +   │  │ (our "database": │
- │  place search│  │  fields, records)│
- └──────────────┘  └──────────────────┘
+ ┌──────────────┐  ┌──────────────────────┐
+ │ Open-Meteo   │  │ Mockoon (local)      │
+ │ (weather +   │  │ localhost:3001/api   │
+ │  place search│  │ our "database":      │
+ │  internet)   │  │ fields, records,     │
+ └──────────────┘  │ messages             │
+                   └──────────────────────┘
 ```
 
 There is **no server code that we write**. All our code runs in the browser. Open-Meteo gives us
-weather. MockAPI acts as a fake back-end that saves our data.
+weather. Mockoon is a mock REST API that runs on our own computer and saves our data.
 
 ---
 
@@ -204,7 +206,7 @@ This pattern (**loading → try → catch → finally**) covers NFR-3 and NFR-4 
 
 ---
 
-## Part 8 – REST and CRUD (MockAPI.io)
+## Part 8 – REST and CRUD (Mockoon)
 
 **CRUD** = **C**reate, **R**ead, **U**pdate, **D**elete, the four things you do with saved data.
 A **REST API** maps them to HTTP methods:
@@ -217,30 +219,28 @@ A **REST API** maps them to HTTP methods:
 | Update a field | `PUT` | `/fields/3` |
 | Delete a field | `DELETE` | `/fields/3` |
 
-### Setting up MockAPI.io (step by step)
-1. Go to **mockapi.io** and sign up (free).
-2. Click **New project** and name it `aquaplan`.
-3. Copy your project's **base URL**, which looks like `https://abc123.mockapi.io/api/v1`.
-   Put it in `js/config.js`.
-4. Click **New resource** and name it `fields`. Add the properties from REQUIREMENTS.md §10.
-5. Create a second resource named `records`.
-6. Open `https://abc123.mockapi.io/api/v1/fields` in your browser. You should see `[]` or sample data.
+### Setting up Mockoon (step by step)
+The API is already described in `mockoon/aquaplan.json`: three **CRUD routes** (`/api/fields`,
+`/api/records`, `/api/messages`), each saving into a **data bucket**.
+1. Run `npm run api` (Mockoon CLI), **or** open `mockoon/aquaplan.json` in the Mockoon desktop app and press ▶ Start.
+2. The server runs on **http://localhost:3001/api**. That base URL is `API_BASE` in `js/config.js`.
+3. Open http://localhost:3001/api/fields in your browser. You should see `[]`.
 
-> MockAPI data is **public**: anyone with the URL can read or change it. That's fine for a class
-> demo, but never store real private data there.
+> Mockoon runs **only on your computer**, so nobody on the internet can see the data. It keeps the
+> data in memory: when Mockoon restarts, the buckets are empty again. Full guide: MOCKOON_SETUP.md.
 
 ### Example CRUD code
 
 ```js
-// js/api/mockApi.js
-import { MOCKAPI_BASE } from '../config.js';
+// js/api/mockoon.js (simplified)
+import { API_BASE } from '../config.js';   // 'http://localhost:3001/api'
 
 async function request(path, options = {}) {
-  const res = await fetch(`${MOCKAPI_BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  if (!res.ok) throw new Error(`MockAPI error ${res.status}`);
+  if (!res.ok) throw new Error(`Server error ${res.status}`);
   return res.json();
 }
 
@@ -366,7 +366,7 @@ If water is needed **but** enough rain is forecast in the next 2 days, tell the 
 
 ## Part 11 – Form validation
 
-Check user input **before** sending it to MockAPI.
+Check user input **before** sending it to the Mockoon server.
 
 ```js
 // js/utils/validation.js
@@ -438,7 +438,12 @@ Design for the phone first, then add `@media` rules for bigger screens.
 
 ## Part 14 – Charts (rice water depth)
 
-**Chart.js** (if the instructor allows it) draws charts from data:
+AquaPlan draws its chart **by hand with SVG** (`js/views/chart.js`), no chart library.
+The solid line is the past (from the latest depth reading), the dashed line the next 7 days. The dashed
+line starts at this morning's measured depth and jumps up on a "Water today" day, because the plan
+assumes the farmer adds the water.
+
+For comparison, this is how the same idea looks with **Chart.js**:
 
 ```html
 <canvas id="depthChart"></canvas>
@@ -453,7 +458,7 @@ new Chart(document.getElementById('depthChart'), {
   },
 });
 ```
-If libraries aren't allowed, we draw a simple line chart with SVG `<polyline>` instead. It's still very doable.
+We chose plain SVG (`<path>` and `<circle>`) instead, so the project uses no chart library.
 
 ---
 
@@ -480,8 +485,8 @@ User opens `#/fields/3`:
 ```
 1. router() sees "#/fields/3" → calls renderFieldDetail("3")
 2. showLoading()
-3. await getField("3")                 → MockAPI  → field object
-4. await getRecords("3")               → MockAPI  → irrigation records + depth readings
+3. await getField("3")                 → Mockoon  → field object
+4. await getRecords("3")               → Mockoon  → irrigation records + depth readings
 5. await getWeather(lat, lon)          → Open-Meteo → past + 7-day daily data
 6. model = field.cropType === 'rice' ? runRiceProjection : runUplandBalance
 7. plan = buildPlan(model output)      → [{date, status: 'IRRIGATE', amountMm: 32}, ...]

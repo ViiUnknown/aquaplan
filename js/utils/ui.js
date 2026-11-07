@@ -66,7 +66,7 @@ export function renderError(container, { title, message, onRetry } = {}) {
 /** Turn any error into a sentence a farmer can understand. */
 export function friendlyError(error) {
   if (!error) return 'Unknown error.';
-  if (error.code === 'NOT_CONFIGURED') return 'MockAPI is not connected yet. Put your MockAPI URL in js/config.js (see SETUP_AND_DEPLOY.md).';
+  if (error.code === 'API_OFFLINE') return "Can't reach AquaPlan's data server.";
   if (error.code === 'NETWORK') return 'Network error. Check your internet connection and try again.';
   if (error.status === 404) return 'Not found. It may have been deleted.';
   if (error.status === 429) return 'The service is busy (too many requests). Wait a moment and try again.';

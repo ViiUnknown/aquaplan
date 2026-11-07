@@ -1,0 +1,228 @@
+{
+  "uuid": "e1c386ac-fd7b-41bc-8851-d2a758529228",
+  "lastMigration": 33,
+  "name": "AquaPlan",
+  "endpointPrefix": "api",
+  "latency": 0,
+  "port": 3001,
+  "hostname": "",
+  "folders": [],
+  "routes": [
+    {
+      "uuid": "f9842be9-f2d0-436e-b591-ccd2348edb95",
+      "type": "crud",
+      "documentation": "Fields: GET list, GET /:id, POST, PUT /:id, DELETE /:id",
+      "method": "",
+      "endpoint": "fields",
+      "responses": [
+        {
+          "uuid": "6ead4bd1-3cc4-4046-a800-bf847794590f",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "flds",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "15758724-63be-45f0-bca6-afc43824a1b6",
+      "type": "crud",
+      "documentation": "Records (irrigation + depth readings): GET list, GET /:id, POST, PUT /:id, DELETE /:id",
+      "method": "",
+      "endpoint": "records",
+      "responses": [
+        {
+          "uuid": "33d892a0-11e5-420a-afc3-5abfebe9c20b",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "rcds",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "d8a07d55-416e-449f-97ab-846b64bcc475",
+      "type": "crud",
+      "documentation": "Contact-form messages: GET list, GET /:id, POST, PUT /:id, DELETE /:id",
+      "method": "",
+      "endpoint": "messages",
+      "responses": [
+        {
+          "uuid": "28cd3218-f40a-48d4-ad04-77e3c0dcdf17",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "msgs",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "8d9f74dd-ce48-4c86-99c7-55abb788f6c9",
+      "type": "crud",
+      "documentation": "Accounts { name, email, role, salt, passwordHash, createdAt }: GET list, GET /:id, POST, PUT /:id, DELETE /:id",
+      "method": "",
+      "endpoint": "users",
+      "responses": [
+        {
+          "uuid": "a6aecd34-a47d-4eac-8b92-5528e2c84c26",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "usrs",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    }
+  ],
+  "rootChildren": [
+    {
+      "type": "route",
+      "uuid": "f9842be9-f2d0-436e-b591-ccd2348edb95"
+    },
+    {
+      "type": "route",
+      "uuid": "15758724-63be-45f0-bca6-afc43824a1b6"
+    },
+    {
+      "type": "route",
+      "uuid": "d8a07d55-416e-449f-97ab-846b64bcc475"
+    },
+    {
+      "type": "route",
+      "uuid": "8d9f74dd-ce48-4c86-99c7-55abb788f6c9"
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "Access-Control-Allow-Origin",
+      "value": "*"
+    },
+    {
+      "key": "Access-Control-Allow-Methods",
+      "value": "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS"
+    },
+    {
+      "key": "Access-Control-Allow-Headers",
+      "value": "Content-Type, Origin, Accept, Authorization, Content-Length, X-Requested-With"
+    }
+  ],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "data": [
+    {
+      "uuid": "74931bf1-636d-4e3b-8938-1885b0ad9462",
+      "id": "flds",
+      "name": "fields",
+      "documentation": "Fields (starts empty; use 'Load demo data' on the dashboard)",
+      "value": "[]"
+    },
+    {
+      "uuid": "c85ee2d2-fc3a-4939-929e-09172cd9781f",
+      "id": "rcds",
+      "name": "records",
+      "documentation": "Irrigation records and rice depth readings",
+      "value": "[]"
+    },
+    {
+      "uuid": "63bc3c1a-ec89-43e4-b0bd-66aecb0d9a31",
+      "id": "msgs",
+      "name": "messages",
+      "documentation": "Contact-form messages",
+      "value": "[]"
+    },
+    {
+      "uuid": "8542bc35-3526-4443-ab2d-c1e0b40db066",
+      "id": "usrs",
+      "name": "users",
+      "documentation": "Accounts. Starts with one admin (login details in MOCKOON_SETUP.md). Passwords are salted SHA-256 hashes.",
+      "value": "[\n  {\n    \"id\": \"admin-1\",\n    \"name\": \"AquaPlan Admin\",\n    \"email\": \"admin@aquaplan.test\",\n    \"role\": \"admin\",\n    \"salt\": \"c151bfc04f4f544960b07fc646594f2f\",\n    \"passwordHash\": \"546f59c59ffc69ce2e557a929227cc5a6a6f38fc3b100dd1384b8b364febe06e\",\n    \"createdAt\": \"2026-11-05T00:00:00.000Z\"\n  }\n]"
+    }
+  ],
+  "callbacks": []
+}

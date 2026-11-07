@@ -1,20 +1,19 @@
-import { MOCKAPI_BASE, isMockApiConfigured } from '../config.js';
+import { API_BASE } from '../config.js';
 import { fetchJson } from './http.js';
 
 async function request(path, { method = 'GET', body } = {}) {
-  if (!isMockApiConfigured()) {
-    const error = new Error('MockAPI is not configured. Set MOCKAPI_BASE in js/config.js.');
-    error.code = 'NOT_CONFIGURED';
+  try {
+    return await fetchJson(`${API_BASE}${path}`, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    if (error.code === 'NETWORK') error.code = 'API_OFFLINE';
     throw error;
   }
-  return fetchJson(`${MOCKAPI_BASE}${path}`, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
 }
 
-/** Like request(), but a 404 on a list means "no items" (MockAPI quirk). */
 async function requestList(path) {
   try {
     return await request(path);
@@ -24,7 +23,6 @@ async function requestList(path) {
   }
 }
 
-// MockAPI returns whatever types were saved; make sure numbers are numbers and ids are strings.
 const FIELD_NUMBERS = ['areaHa', 'rootDepthM', 'p', 'lat', 'lon', 'usualAmountMm', 'usualIntervalDays',
   'seepageMmDay', 'refillMm', 'targetMm', 'bundMm', 'pumpM3PerHour'];
 const RECORD_NUMBERS = ['amountMm', 'depthMm', 'recommendedMm'];
@@ -44,7 +42,6 @@ function normalize(item, numberKeys) {
 const normalizeField = field => normalize(field, FIELD_NUMBERS);
 const normalizeRecord = record => ({ ...normalize(record, RECORD_NUMBERS), fieldId: String(record.fieldId) });
 
-// ---------- fields ----------
 
 export async function getFields() {
   const list = await requestList('/fields');
@@ -59,7 +56,6 @@ export async function createField(field) {
   return normalizeField(await request('/fields', { method: 'POST', body: field }));
 }
 
-/** Send the WHOLE field object (PUT replaces it). */
 export async function updateField(id, field) {
   return normalizeField(await request(`/fields/${encodeURIComponent(id)}`, { method: 'PUT', body: field }));
 }
@@ -68,8 +64,6 @@ export async function deleteField(id) {
   return request(`/fields/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-// ---------- records ----------
-
 export async function getAllRecords() {
   const list = await requestList('/records');
   return list.map(normalizeRecord);
@@ -77,7 +71,6 @@ export async function getAllRecords() {
 
 export async function getRecords(fieldId) {
   const list = await requestList(`/records?fieldId=${encodeURIComponent(fieldId)}`);
-  // MockAPI filters by "contains" (?fieldId=1 also matches 10, 11…), so keep exact matches only.
   return list
     .map(normalizeRecord)
     .filter(r => r.fieldId === String(fieldId))
@@ -96,7 +89,6 @@ export async function deleteRecord(id) {
   return request(`/records/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-/** MockAPI does not delete child records for us, so delete them first (one at a time). */
 export async function deleteFieldWithRecords(fieldId) {
   const records = await getRecords(fieldId);
   for (const record of records) {
@@ -105,9 +97,37 @@ export async function deleteFieldWithRecords(fieldId) {
   return deleteField(fieldId);
 }
 
-// ---------- messages (contact form) ----------
-
-/** Save a contact-form message: { name, email, message, sentAt }. */
 export async function createMessage(message) {
   return request('/messages', { method: 'POST', body: message });
+}
+
+export async function getMessages() {
+  const list = await requestList('/messages');
+  return list.map(m => ({ ...m, id: String(m.id) })).sort((a, b) => (b.sentAt ?? '').localeCompare(a.sentAt ?? ''));
+}
+
+export async function deleteMessage(id) {
+  return request(`/messages/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+const normalizeUser = user => ({ ...user, id: String(user.id) });
+
+export async function getUsers() {
+  const list = await requestList('/users');
+  return list
+    .filter(u => u && typeof u.email === 'string' && typeof u.passwordHash === 'string')   // ignore anything that isn't an account
+    .map(normalizeUser)
+    .sort((a, b) => String(a.name ?? '').localeCompare(String(b.name ?? '')));
+}
+
+export async function createUser(user) {
+  return normalizeUser(await request('/users', { method: 'POST', body: user }));
+}
+
+export async function updateUser(id, user) {
+  return normalizeUser(await request(`/users/${encodeURIComponent(id)}`, { method: 'PUT', body: user }));
+}
+
+export async function deleteUser(id) {
+  return request(`/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

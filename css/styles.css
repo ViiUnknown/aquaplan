@@ -50,6 +50,7 @@
   --font:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Khmer", monospace;
   --map-filter: none;
+  --photo-veil: rgb(245 248 243 / 0.84); /* page colour at 84%: the background photo shows softly */
   color-scheme: light;
 }
 
@@ -93,6 +94,7 @@
     --chart-forecast: #6cc24a;
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.5);
     --map-filter: brightness(0.8) contrast(1.1);
+    --photo-veil: rgb(7 17 28 / 0.86);
     color-scheme: dark;
   }
 }
@@ -137,6 +139,7 @@
   --chart-forecast: #6cc24a;
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.5);
   --map-filter: brightness(0.8) contrast(1.1);
+  --photo-veil: rgb(7 17 28 / 0.86);
   color-scheme: dark;
 }
 
@@ -161,11 +164,18 @@ body {
   line-height: 1.5;
   color: var(--text);
   background-color: var(--bg);
-  /* grid paper, 100px squares */
+  /* Layers, top to bottom:
+     1–2. grid paper (100px squares)
+     3.   a veil in the page colour that hides almost all of the photo
+     4.   our rice-field photo, barely visible behind the cards */
   background-image:
     linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 100px 100px;
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--photo-veil), var(--photo-veil)),
+    url("../assets/background-main.webp");
+  background-size: 100px 100px, 100px 100px, cover, cover;
+  background-position: 0 0, 0 0, center, center bottom;
+  background-attachment: scroll, scroll, fixed, fixed; /* the photo stays still while you scroll */
 
   /* Sticky footer: the page is a column at least as tall as the screen,
      so the footer is pushed to the bottom even when there is little content. */
@@ -242,12 +252,26 @@ small {
 /* ==========================================================================
    3. Header / footer
    ========================================================================== */
-.site-header {
-  /* Header and footer share --bar-bg so they frame the page, apart from main */
-  background: color-mix(in srgb, var(--bar-bg) 92%, transparent);
-  border-bottom: 1px solid var(--bar-border);
+/* ONE photo behind the header, the home banner and the footer.
+   "fixed" pins the photo to the browser window instead of to each box, so the three
+   boxes are like windows onto the same picture: the header shows the sky, the footer
+   shows the field, and it feels like one image behind the whole website.
+   The navy layer on top (also fixed) keeps the text readable. */
+.site-header,
+.site-footer,
+.home-hero {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--bar-bg) 80%, transparent),
+      color-mix(in srgb, var(--bar-bg) 90%, transparent)
+    ) fixed,
+    url("../assets/hero-on-homepage.webp") center 65% / cover no-repeat fixed,
+    var(--bar-bg);
   color: var(--bar-text);
-  backdrop-filter: blur(6px);
+}
+
+.site-header {
+  border-bottom: 1px solid var(--bar-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -384,9 +408,7 @@ main:focus {
 }
 
 .site-footer {
-  background: var(--bar-bg);
   border-top: 1px solid var(--bar-border);
-  color: var(--bar-text);
   padding: 1.25rem 0;
   font-size: 0.85rem;
 }
@@ -1199,11 +1221,6 @@ textarea[aria-invalid="true"] {
   color: var(--danger);
 }
 
-.state--setup {
-  background: var(--surface);
-  border: 2px dashed var(--btn-bg-hover);
-  border-radius: var(--radius);
-}
 
 .state__icon {
   font-size: 3rem;
@@ -1496,8 +1513,7 @@ textarea[aria-invalid="true"] {
    ========================================================================== */
 /* Big navy banner on the home page, same colour as the header and footer */
 .home-hero {
-  background: var(--bar-bg);
-  color: var(--bar-text);
+  /* background: the shared photo, see ".site-header, .site-footer, .home-hero" above */
   border-radius: var(--radius);
   padding: 3rem 1.5rem;
   text-align: center;
@@ -1640,4 +1656,275 @@ textarea[aria-invalid="true"] {
   .home-hero__title {
     font-size: 1.5rem;
   }
+}
+
+/* ==========================================================================
+   20. Accounts: header user area, login/register, admin page
+   ========================================================================== */
+.site-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-chip {
+  color: var(--bar-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.menu__divider {
+  width: 100%;
+  margin: 0.35rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Login and register: one narrow card in the middle */
+.auth {
+  align-items: center;
+}
+
+.auth__card,
+.auth .flash {
+  width: 100%;
+  max-width: 440px;
+}
+
+.auth__card h1 {
+  margin-bottom: 0;
+}
+
+.auth__submit {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.auth__switch {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Admin page */
+.table .input--inline {
+  width: auto;
+  min-height: 34px;
+  padding: 0.2rem 0.5rem;
+}
+
+.messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.messages__item {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.messages__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.messages__head .btn {
+  margin-left: auto;
+}
+
+.messages__item p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Log out: an outlined button that blends with the navy header */
+.user-logout,
+.header-login {
+  white-space: nowrap; /* never break "Log out" onto two lines */
+}
+
+.user-logout {
+  gap: 0.35rem;
+  background: transparent;
+  color: var(--bar-text);
+  border: 1px solid rgb(255 255 255 / 0.45);
+  box-shadow: none;
+}
+
+.user-logout:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.user-logout svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Phones: the header is narrow, so show only the icon (the button keeps its "Log out" label
+   for screen readers) and a slightly smaller logo. */
+@media (max-width: 560px) {
+  .user-chip {
+    display: none;
+  }
+
+  .user-logout {
+    width: 36px;
+    padding: 0;
+  }
+
+  .user-logout__text {
+    display: none;
+  }
+
+  .site-header__right {
+    gap: 0.5rem;
+  }
+
+  .site-header__left {
+    gap: 0.4rem;
+  }
+
+  .brand__logo {
+    height: 32px;
+  }
+}
+
+/* ==========================================================================
+   21. How it works: the calculation explained
+   ========================================================================== */
+.how__title {
+  font-size: 1.4rem;
+  margin: 1rem 0 0;
+}
+
+.calc-step h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.calc-step h3 .step-number {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.calc-step > p,
+.calc-step .table-wrap {
+  max-width: 900px;
+}
+
+/* A formula in a grey box */
+.formula {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-weight: 700;
+}
+
+/* "What each word means": word on the left, meaning on the right */
+.terms {
+  margin: 0.75rem 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.terms > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.15rem;
+}
+
+@media (min-width: 720px) {
+  .terms > div {
+    grid-template-columns: minmax(180px, 240px) 1fr;
+    gap: 1rem;
+  }
+}
+
+.terms dt {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.terms dd {
+  margin: 0;
+  color: var(--text);
+}
+
+/* Worked example */
+.calc-example {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 2px dashed var(--btn-bg-hover);
+  border-radius: var(--radius-sm);
+}
+
+.calc-example__title {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+}
+
+.calc-example ul,
+.how__list {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.calc-example li,
+.how__list li {
+  margin-bottom: 0.25rem;
+}
+
+/* Sub-parts inside a How-it-works step */
+.calc-part {
+  margin-top: 1rem;
+}
+
+.calc-part h4 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  color: var(--primary);
+}
+
+.calc-step p,
+.calc-step li {
+  max-width: 85ch;
+}
+
+/* Small note with the scientific names, for developers and teachers */
+.science {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+
+/* How it works: tables full width, long text wraps instead of scrolling sideways */
+.how .table-wrap {
+  max-width: none;
+}
+
+.how .table th,
+.how .table td {
+  white-space: normal;
+  vertical-align: top;
 }

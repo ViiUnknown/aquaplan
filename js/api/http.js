@@ -15,5 +15,6 @@ export async function fetchJson(url, options = {}) {
     error.url = url;
     throw error;
   }
-  return response.json();
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }

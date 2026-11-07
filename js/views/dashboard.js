@@ -1,25 +1,22 @@
 // #/dashboard – all fields with today's status.
 
-import { getFields, getAllRecords } from '../api/mockApi.js';
+import { getFields, getAllRecords } from '../api/mockoon.js';
+import { currentUser } from '../auth.js';
 import { analyzeField } from '../services/fieldService.js';
 import { seedDemoData } from '../services/demoData.js';
-import { isMockApiConfigured, TIMEZONE } from '../config.js';
+import { TIMEZONE } from '../config.js';
 import { STATUS, FIELD_STATUS } from '../models/constants.js';
 import { todayISO } from '../utils/date.js';
 import { formatNumber } from '../utils/format.js';
 import { html, setHTML, renderLoading, friendlyError, flashBanner, setBusy } from '../utils/ui.js';
 import { takeFlash } from '../state.js';
-import { cropLabel, fieldStatusSummary, setupNotice } from './components.js';
+import { cropLabel, fieldStatusSummary } from './components.js';
 
 export async function renderDashboard(ctx) {
   const { container } = ctx;
-  if (!isMockApiConfigured()) {
-    setHTML(container, setupNotice());
-    return;
-  }
-
   renderLoading(container, 'Loading your fields…');
-  const [fields, allRecords] = await Promise.all([getFields(), getAllRecords()]);
+  const [allFields, allRecords] = await Promise.all([getFields(), getAllRecords()]);
+  const fields = allFields.filter(f => f.ownerId === currentUser().id);   // only my own fields
   if (!ctx.isCurrent()) return;
 
   const flash = takeFlash();

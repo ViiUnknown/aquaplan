@@ -5,12 +5,22 @@
 //   #/fields/:id           field detail (plan, chart, comparison)
 //   #/fields/:id/edit      edit a field
 //   #/fields/:id/records   irrigation records + depth readings
+//   #/login  #/register     accounts          #/admin   admin only
+//
+// access: 'user'  → must be logged in (any role)
+//         'admin' → must be logged in with the admin role
+//         'guest' → only when logged out (login/register)
 
-import { renderHome, renderPurpose, renderHowItWorks, renderAbout, renderContact } from './views/pages.js';
+import { renderHome, renderPurpose, renderAbout, renderContact } from './views/pages.js';
+import { renderHowItWorks } from './views/howItWorks.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderFieldForm } from './views/fieldForm.js';
 import { renderFieldDetail } from './views/fieldDetail.js';
 import { renderRecords } from './views/records.js';
+import { renderLogin, renderRegister, rememberNextPage } from './views/auth.js';
+import { renderAdmin } from './views/admin.js';
+import { currentUser, isLoggedIn, isAdmin, logout, onAuthChange } from './auth.js';
+import { setFlash } from './state.js';
 import { html, setHTML, renderError, friendlyError } from './utils/ui.js';
 import { initThemeToggle } from './theme.js';
 import { initMenu } from './menu.js';
@@ -24,11 +34,14 @@ const routes = [
   { pattern: /^#\/how-it-works$/, view: renderHowItWorks, nav: 'how' },
   { pattern: /^#\/about$/, view: renderAbout, nav: 'about' },
   { pattern: /^#\/contact$/, view: renderContact, nav: 'contact' },
-  { pattern: /^#\/dashboard$/, view: renderDashboard, nav: 'dashboard' },
-  { pattern: /^#\/fields\/new$/, view: renderFieldForm, nav: 'dashboard' },
-  { pattern: /^#\/fields\/([^/]+)\/edit$/, view: renderFieldForm },
-  { pattern: /^#\/fields\/([^/]+)\/records$/, view: renderRecords },
-  { pattern: /^#\/fields\/([^/]+)$/, view: renderFieldDetail },
+  { pattern: /^#\/login$/, view: renderLogin, nav: 'login', access: 'guest' },
+  { pattern: /^#\/register$/, view: renderRegister, nav: 'register', access: 'guest' },
+  { pattern: /^#\/dashboard$/, view: renderDashboard, nav: 'dashboard', access: 'user' },
+  { pattern: /^#\/fields\/new$/, view: renderFieldForm, nav: 'dashboard', access: 'user' },
+  { pattern: /^#\/fields\/([^/]+)\/edit$/, view: renderFieldForm, access: 'user' },
+  { pattern: /^#\/fields\/([^/]+)\/records$/, view: renderRecords, access: 'user' },
+  { pattern: /^#\/fields\/([^/]+)$/, view: renderFieldDetail, access: 'user' },
+  { pattern: /^#\/admin$/, view: renderAdmin, nav: 'admin', access: 'admin' },
 ];
 
 // Each navigation gets a number. Slow requests from an old page check
@@ -42,6 +55,25 @@ function renderNotFound() {
       <p>This address doesn't exist in AquaPlan.</p>
       <a class="btn btn--primary" href="#/dashboard">Go to dashboard</a>
     </div>`);
+}
+
+function renderAdminsOnly() {
+  setHTML(app, html`
+    <div class="state">
+      <h1>Admins only</h1>
+      <p>This page is only for AquaPlan administrators.</p>
+      <a class="btn btn--primary" href="#/dashboard">Go to your dashboard</a>
+    </div>`);
+}
+
+/** Show/hide menu items for guests, users and admins, and the name + Log out button. */
+function updateAuthUI(user) {
+  document.querySelectorAll('[data-auth]').forEach(el => {
+    const need = el.dataset.auth;
+    el.hidden = need === 'guest' ? Boolean(user) : need === 'admin' ? user?.role !== 'admin' : !user;
+  });
+  const name = document.querySelector('[data-user-name]');
+  if (name) name.textContent = user ? `${user.name}${user.role === 'admin' ? ' (admin)' : ''}` : '';
 }
 
 function highlightNav(nav) {
@@ -65,12 +97,33 @@ async function router() {
     return;
   }
 
+  // Access rules (see the list at the top of this file).
+  if (route.access === 'guest' && isLoggedIn()) {
+    location.hash = '#/dashboard';
+    return;
+  }
+  if ((route.access === 'user' || route.access === 'admin') && !isLoggedIn()) {
+    rememberNextPage(hash);               // come back here after logging in
+    setFlash('Please log in to continue.', 'error');
+    location.hash = '#/login';
+    return;
+  }
+  if (route.access === 'admin' && !isAdmin()) {
+    renderAdminsOnly();
+    return;
+  }
+
   const params = hash.match(route.pattern).slice(1).map(decodeURIComponent);
   try {
     await route.view(ctx, ...params);
   } catch (error) {
     console.error(error);
-    if (ctx.isCurrent()) {
+    if (!ctx.isCurrent()) return;
+    if (error.status === 403) {
+      // Someone else's field: explain it, no "Try again" (it would fail again).
+      renderError(app, { title: 'No access', message: friendlyError(error) });
+      app.querySelector('.state')?.insertAdjacentHTML('beforeend', '<a class="btn btn--primary" href="#/dashboard">Go to your dashboard</a>');
+    } else {
       renderError(app, { message: friendlyError(error), onRetry: router });
     }
   }
@@ -78,5 +131,14 @@ async function router() {
 
 initThemeToggle(document.querySelector('[data-theme-toggle]'));
 initMenu(document.querySelector('[data-menu-toggle]'), document.getElementById('site-menu'));
+
+onAuthChange(updateAuthUI);
+updateAuthUI(currentUser());
+document.querySelector('[data-logout]')?.addEventListener('click', () => {
+  logout();
+  setFlash('You are logged out.');
+  if (location.hash === '#/login') router();
+  else location.hash = '#/login';
+});
 window.addEventListener('hashchange', router);
 router();

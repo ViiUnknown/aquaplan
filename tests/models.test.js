@@ -8,7 +8,7 @@ import { riceParams, riceStep } from '../js/models/rice.js';
 import { buildPlan, recommendationForDate, requiredPastDays } from '../js/models/plan.js';
 import { verdict, buildComparison } from '../js/models/compare.js';
 import { STATUS, FIELD_STATUS } from '../js/models/constants.js';
-import { validateField, validateRecord, validateContact } from '../js/utils/validation.js';
+import { validateField, validateRecord, validateContact, validateRegister, validateLogin } from '../js/utils/validation.js';
 import { mmToM3, m3ToMm, pumpHoursToMm, drumSecondsToM3PerHour, formatHours, pumpTime } from '../js/utils/format.js';
 import { addDays, daysBetween, isValidISODate } from '../js/utils/date.js';
 
@@ -138,6 +138,16 @@ test('Recorded irrigation is used and saved recommendations come from the model'
   assertEqual(recommendationForDate(result, '2000-01-01'), null);
 });
 
+test('Saved advice is 0 on days the plan did not say "Water today"', () => {
+  const records = [{ type: 'irrigation', date: addDays(TODAY, -11), amountMm: 500 }];
+  const result = buildPlan({ field: midSeasonMaize, records, days: makeDays(80), today: TODAY });
+  // The day after the refill only 6 mm are missing → "No water needed" → advice 0
+  assertEqual(recommendationForDate(result, addDays(TODAY, -10)), 0);
+  // Soil empty, but 300 mm of rain two days later (80% = 240 ≥ 160) → "Wait for the rain" → advice 0
+  const rainy = buildPlan({ field: midSeasonMaize, records, days: makeDays(80, 9, { overrides: { [-9]: { rain: 300 } } }), today: TODAY });
+  assertEqual(recommendationForDate(rainy, addDays(TODAY, -11)), 0);
+});
+
 test('Rice: needs a depth reading first', () => {
   const result = buildPlan({ field: riceField, records: [], days: makeDays(0), today: TODAY });
   assertEqual(result.fieldStatus, FIELD_STATUS.NEEDS_READING);
@@ -246,6 +256,24 @@ test('Contact form validation', () => {
   assertEqual(Object.keys(validateContact(ok)).length, 0, 'valid message');
   const bad = validateContact({ name: 'D', email: 'dara@', message: 'hi' });
   assertEqual(Object.keys(bad).sort().join(','), 'email,message,name', 'all three errors');
+});
+
+test('Register and login validation', () => {
+  const ok = { name: 'Dara', email: 'dara@example.com', password: 'rice2026', confirm: 'rice2026' };
+  assertEqual(Object.keys(validateRegister(ok)).length, 0, 'valid account');
+  assertEqual(validateRegister({ ...ok, password: 'short1', confirm: 'short1' }).password, 'Password must be at least 8 characters.');
+  assertEqual(validateRegister({ ...ok, password: 'onlyletters', confirm: 'onlyletters' }).password, 'Use at least one letter and one number.');
+  assertEqual(validateRegister({ ...ok, confirm: 'rice2027' }).confirm, 'The passwords do not match.');
+  assertEqual(Object.keys(validateLogin({ email: 'x', password: '' })).sort().join(','), 'email,password');
+});
+
+test('Rice amounts are limited by the field wall', () => {
+  const paddy = { plantingDate: '2026-09-01', bundMm: 100 };   // wall 10 cm
+  const base = { type: 'irrigation', date: TODAY, unit: 'cm', note: '' };
+  assertEqual(validateRecord({ ...base, amount: 5 }, paddy, TODAY).amount, undefined, '5 cm is fine');
+  assertEqual(validateRecord({ ...base, amount: 1000 }, paddy, TODAY).amount, 'At most 10 cm: more than that would flow over your field wall.');
+  const reading = { type: 'depthReading', date: TODAY, depthCm: 12, note: '' };
+  assertEqual(validateRecord(reading, paddy, TODAY).depthCm, "Can't be higher than your field wall (10 cm).");
 });
 
 // ---------- Runner ----------

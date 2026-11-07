@@ -1,12 +1,11 @@
-// Form validation (REQUIREMENTS.md §8).
-// Each function returns an object { inputName: 'message' }. Empty object = valid.
-
-import { CROPS, SOILS } from '../models/constants.js';
+import { CROPS, SOILS, RICE_DEFAULTS } from '../models/constants.js';
 import { isValidISODate, addDays } from './date.js';
 
 const isNum = value => typeof value === 'number' && Number.isFinite(value);
 const isPumpFlow = value => isNum(value) && value >= 1 && value <= 1000;
 const PUMP_ERROR = 'Pump flow must be between 1 and 1000 m³ per hour.';
+
+const bundCm = field => (field.bundMm ?? RICE_DEFAULTS.bundMm) / 10;
 
 export function validateField(f, today) {
   const errors = {};
@@ -56,6 +55,8 @@ export function validateField(f, today) {
 
   if (f.usualAmountMm != null && (!isNum(f.usualAmountMm) || f.usualAmountMm < 0)) {
     errors.usualAmountMm = 'Usual amount must be 0 or more.';
+  } else if (isRice && isNum(f.usualAmountMm) && isNum(f.bundMm) && f.usualAmountMm > f.bundMm) {
+    errors.usualAmountMm = `More than your field wall can hold (${f.bundMm / 10} cm).`;
   }
   if (f.usualIntervalDays != null) {
     if (!Number.isInteger(f.usualIntervalDays) || f.usualIntervalDays < 1 || f.usualIntervalDays > 60) {
@@ -67,11 +68,6 @@ export function validateField(f, today) {
 
   return errors;
 }
-
-/**
- * `r` = { type, date, amount, unit, pumpM3PerHour, depthCm, note } as typed in the records form
- * (amount is in the unit the user picked; it is converted to mm before saving).
- */
 export function validateRecord(r, field, today) {
   const errors = {};
 
@@ -82,9 +78,13 @@ export function validateRecord(r, field, today) {
   if (r.type === 'irrigation') {
     if (!isNum(r.amount) || r.amount <= 0) errors.amount = 'Amount must be more than 0.';
     else if (r.unit === 'hours' && r.amount > 24) errors.amount = 'At most 24 hours. Add one record per day.';
+    else if (r.unit === 'cm' && r.amount > bundCm(field)) {
+      errors.amount = `At most ${bundCm(field)} cm: more than that would flow over your field wall.`;
+    }
     if (r.unit === 'hours' && !isPumpFlow(r.pumpM3PerHour)) errors.pumpM3PerHour = PUMP_ERROR;
   } else if (r.type === 'depthReading') {
     if (!isNum(r.depthCm) || r.depthCm < 0 || r.depthCm > 30) errors.depthCm = 'Depth must be between 0 and 30 cm.';
+    else if (r.depthCm > bundCm(field)) errors.depthCm = `Can't be higher than your field wall (${bundCm(field)} cm).`;
   } else {
     errors.type = 'Choose a record type.';
   }
@@ -96,12 +96,28 @@ export function validateRecord(r, field, today) {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Contact form: `m` = { name, email, message } (already trimmed). */
 export function validateContact(m) {
   const errors = {};
   if (m.name.length < 2 || m.name.length > 60) errors.name = 'Name must be 2–60 characters.';
   if (!EMAIL_PATTERN.test(m.email)) errors.email = 'Enter a valid email, e.g. name@example.com.';
   if (m.message.length < 10) errors.message = 'Message must be at least 10 characters.';
   else if (m.message.length > 1000) errors.message = 'Message must be 1000 characters or fewer.';
+  return errors;
+}
+
+export function validateRegister(r) {
+  const errors = {};
+  if (r.name.length < 2 || r.name.length > 60) errors.name = 'Name must be 2–60 characters.';
+  if (!EMAIL_PATTERN.test(r.email)) errors.email = 'Enter a valid email, e.g. name@example.com.';
+  if (r.password.length < 8) errors.password = 'Password must be at least 8 characters.';
+  else if (!/[A-Za-z]/.test(r.password) || !/\d/.test(r.password)) errors.password = 'Use at least one letter and one number.';
+  if (r.confirm !== r.password) errors.confirm = 'The passwords do not match.';
+  return errors;
+}
+
+export function validateLogin(l) {
+  const errors = {};
+  if (!EMAIL_PATTERN.test(l.email)) errors.email = 'Enter your email.';
+  if (!l.password) errors.password = 'Enter your password.';
   return errors;
 }

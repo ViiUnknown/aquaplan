@@ -5,7 +5,8 @@
   "description": "AquaPlan – Farm Weather & Irrigation Planner (vanilla JS single-page app)",
   "type": "module",
   "scripts": {
-    "start": "npx --yes serve .",
+    "start": "npx --yes serve . -l 3000",
+    "api": "npx --yes @mockoon/cli@9 start --data ./mockoon/aquaplan.json",
     "test": "node tests/models.test.js"
   }
 }

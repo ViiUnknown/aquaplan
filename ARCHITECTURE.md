@@ -1,7 +1,7 @@
 # AquaPlan – System Architecture
 
 This document describes how AquaPlan is organised: the parts of the system, how they talk to each
-other, how data is stored in MockAPI, and what happens step by step for the main user actions.
+other, how data is stored in the local Mockoon API, and what happens step by step for the main user actions.
 
 > **Viewing the diagrams:** the diagrams use **Mermaid**. GitHub renders them automatically. In VS Code,
 > install the extension **"Markdown Preview Mermaid Support"** (by Matt Bierner), then press
@@ -24,12 +24,12 @@ These external services are used:
 | **OpenStreetMap tiles** (via Leaflet 1.9.4 from cdnjs) | Map for picking a field's location | None | Read only |
 | **Nominatim** (OpenStreetMap) | Map point → place name (reverse geocoding) | None | Read only |
 | **Browser Geolocation API** | "Use my location" button | User permission | Read only |
-| **MockAPI.io** | Stores `fields` and `records` (our "database") | None (public URL) | Read + write |
+| **Mockoon** (local, `localhost:3001`) | Stores `fields`, `records` and `messages` (our "database") | None (only on this computer) | Read + write |
 
 Key design choices:
 1. **Layered code:** UI (views) → services (API wrappers, models) → external APIs. Each layer only calls the layer below it.
 2. **Pure calculation core:** `js/models/` has no DOM or `fetch`, so it is easy to test.
-3. **Store inputs, compute outputs:** MockAPI holds only what the user entered. Deficits, depths and plans are recalculated on every view.
+3. **Store inputs, compute outputs:** Mockoon holds only what the user entered. Deficits, depths and plans are recalculated on every view.
 4. **Hash routing:** one `index.html`. The `#/...` part of the URL decides which view is shown.
 5. **Store mm, show farmer units:** water amounts are always stored in mm and converted for display to cm, m³ or pump hours.
 
@@ -54,7 +54,7 @@ flowchart LR
     wx["Open-Meteo<br/>Forecast API"]
     osm["OpenStreetMap<br/>map tiles"]
     nom["Nominatim<br/>reverse geocoding"]
-    mock[("MockAPI.io<br/>fields · records")]
+    mock[("Mockoon (localhost:3001)<br/>fields · records · messages")]
 
     farmer -- "uses" --> app
     app -- "GET place search" --> geo
@@ -69,37 +69,35 @@ flowchart LR
 
 ---
 
-## 3. Deployment diagram
+## 3. Deployment diagram (local only)
 
-Where each piece runs.
+Where each piece runs. Everything except the weather and the map runs on one computer.
 
 ```mermaid
 flowchart TB
-    subgraph host["Static hosting: GitHub Pages / Netlify / Live Server"]
-        files["index.html<br/>css/styles.css<br/>js/**/*.js"]
+    subgraph pc["The farmer's / presenter's computer"]
+        web["Web server (npm start)<br/>localhost:3000<br/>index.html · css · js"]
+        mock["Mockoon (npm run api)<br/>localhost:3001/api<br/>mockoon/aquaplan.json"]
+        runtime["Browser<br/>runs AquaPlan"]
     end
 
-    subgraph client["Browser: phone or desktop"]
-        runtime["JavaScript runtime<br/>runs AquaPlan"]
-    end
-
-    subgraph cloud["Third-party cloud APIs (HTTPS, JSON)"]
+    subgraph cloud["Internet APIs (HTTPS, JSON)"]
         om["api.open-meteo.com<br/>geocoding-api.open-meteo.com"]
         map["tile.openstreetmap.org<br/>nominatim.openstreetmap.org"]
         cdn["cdnjs.cloudflare.com<br/>Leaflet library"]
-        ma["&lt;project-id&gt;.mockapi.io/api/v1"]
     end
 
-    host -- "1 download static files" --> client
-    cdn -- "1b download Leaflet" --> client
-    client -- "2 fetch() weather" --> om
-    client -- "3 fetch() CRUD" --> ma
-    client -- "4 map tiles + place names" --> map
+    web -- "1 download static files" --> runtime
+    cdn -- "1b download Leaflet" --> runtime
+    runtime -- "2 fetch() weather" --> om
+    runtime -- "3 fetch() CRUD" --> mock
+    runtime -- "4 map tiles + place names" --> map
 ```
 
-The host only serves files; it runs no code. The live site is on **GitHub Pages**
-(https://viiunknown.github.io/aquaplan/). All requests to Open-Meteo, Nominatim and MockAPI go
-**directly from the browser** to those services (all allow cross-origin requests).
+The web server only serves files; it runs no code. **Mockoon** is a mock REST API: it answers
+GET/POST/PUT/DELETE from its data buckets (in memory, reset when Mockoon restarts). CORS is on, so the
+page on port 3000 may call port 3001. There is **no public deployment**: the app only works on a
+computer that runs both servers.
 
 ---
 
@@ -124,7 +122,7 @@ flowchart TB
         subgraph api["js/api/"]
             om["openMeteo.js<br/>geocode · getWeather"]
             nom["nominatim.js<br/>reverseGeocode"]
-            ma["mockApi.js<br/>fields + records CRUD"]
+            ma["mockoon.js<br/>fields · records · messages CRUD"]
         end
         subgraph models["js/models/ (pure functions)"]
             kc["kc.js"]
@@ -153,7 +151,7 @@ flowchart TB
     kc --> const
     up --> const
     rice --> const
-    api --> cfg["config.js<br/>MOCKAPI_BASE"]
+    api --> cfg["config.js<br/>API_BASE"]
 ```
 
 ### Module responsibilities
@@ -164,7 +162,7 @@ flowchart TB
 | `views/*` | Build HTML, handle events, call services, show loading/errors | api, models, utils, state | — |
 | `api/openMeteo.js` | Build Open-Meteo URLs, fetch, reshape arrays into day objects, cache | config, `sessionStorage` | DOM |
 | `api/nominatim.js` | Map point → place name, cached in memory (usage policy: ≤ 1 request/second) | `http.js` | DOM |
-| `api/mockApi.js` | One function per CRUD action, throw on non-2xx | config | DOM |
+| `api/mockoon.js` | One function per CRUD action, throw on non-2xx, mark "server not running" | config | DOM |
 | `models/*` | Kc, water balance, projection, plan statuses | constants | DOM, fetch, storage |
 | `utils/validation.js` | Return `{field: message}` error maps | — | fetch |
 | `utils/format.js` | mm ↔ m³, cm ↔ mm, mm ↔ pump hours, drum timing → m³/h, formatting | — | — |
@@ -192,7 +190,7 @@ flowchart LR
 
 ---
 
-## 6. Data architecture (MockAPI)
+## 6. Data architecture (Mockoon)
 
 ### 6.1 Entity-relationship diagram
 
@@ -203,8 +201,7 @@ erDiagram
     FIELDS ||--o{ RECORDS : "has many"
 
     FIELDS {
-        string id PK "auto by MockAPI"
-        date createdAt "auto by MockAPI"
+        string id PK "UUID, made by Mockoon"
         string name
         string cropType "rice | maize | soybean | cassava"
         string plantingDate "YYYY-MM-DD"
@@ -225,8 +222,7 @@ erDiagram
     }
 
     RECORDS {
-        string id PK "auto by MockAPI"
-        date createdAt "auto by MockAPI"
+        string id PK "UUID, made by Mockoon"
         string fieldId FK "points to FIELDS.id"
         string date "YYYY-MM-DD"
         string type "irrigation | depthReading"
@@ -235,13 +231,23 @@ erDiagram
         number recommendedMm "snapshot at save time"
         string note "optional"
     }
+
+    MESSAGES {
+        string id PK "UUID, made by Mockoon"
+        string name
+        string email
+        string message
+        string sentAt "ISO date-time"
+    }
 ```
+
+`messages` (contact form) is not linked to fields.
 
 ### 6.2 What is stored vs what is calculated
 
 ```mermaid
 flowchart LR
-    subgraph stored["Stored in MockAPI (user inputs)"]
+    subgraph stored["Stored in Mockoon (user inputs)"]
         F["fields"]
         R["records"]
     end
@@ -269,12 +275,13 @@ data inconsistent. The next page load simply recalculates.
 
 ### 6.3 Endpoint map
 
-Base URL: `https://<project-id>.mockapi.io/api/v1`
+Base URL: `http://localhost:3001/api` (`API_BASE` in `js/config.js`). Each path is a Mockoon **CRUD route** backed by a data bucket.
 
 ```mermaid
 flowchart LR
-    base["/api/v1"] --> fields["/fields"]
+    base["/api"] --> fields["/fields"]
     base --> records["/records"]
+    base --> messages["/messages<br/>POST from the contact form"]
     fields --> f1["GET  list all"]
     fields --> f2["POST create"]
     fields --> fid["/fields/:id"]
@@ -291,13 +298,14 @@ flowchart LR
 |---|---|---|---|---|
 | GET | `/fields` | – | 200 + array | dashboard |
 | GET | `/fields/:id` | – | 200 + object | detail, edit form |
-| POST | `/fields` | field JSON (no id) | 201 + created object | new form |
+| POST | `/fields` | field JSON (no id) | 200 + created object with a new `id` | new form |
 | PUT | `/fields/:id` | full field JSON | 200 + updated object | edit form |
-| DELETE | `/fields/:id` | – | 200 + deleted object | detail (after deleting its records) |
-| GET | `/records?fieldId=:id` | – | 200 + array (**filter exactly in JS**: MockAPI filters match partially) | detail, records |
-| POST | `/records` | record JSON | 201 | records |
+| DELETE | `/fields/:id` | – | 200 | detail (after deleting its records) |
+| GET | `/records?fieldId=:id` | – | 200 + array (**filtered exactly in JS**, whatever the server does with the filter) | detail, records |
+| POST | `/records` | record JSON | 200 | records |
 | PUT | `/records/:id` | full record JSON | 200 | records |
 | DELETE | `/records/:id` | – | 200 | records |
+| POST | `/messages` | `{ name, email, message, sentAt }` | 200 | contact page |
 
 ---
 
@@ -312,8 +320,8 @@ sequenceDiagram
     participant OM as openMeteo.js
     participant G as Open-Meteo Geocoding
     participant VAL as validation.js
-    participant MA as mockApi.js
-    participant M as MockAPI.io
+    participant MA as mockoon.js
+    participant M as Mockoon
 
     alt search by name
         U->>V: types "Battambang", clicks Search
@@ -334,9 +342,9 @@ sequenceDiagram
     else valid
         V->>MA: createField(formData)
         MA->>M: POST /fields
-        M-->>MA: 201 { id: "7", ... }
+        M-->>MA: 200 { id: "3f2a…", ... }
         MA-->>V: new field
-        V-->>U: redirect to #/fields/7
+        V-->>U: redirect to #/fields/3f2a…
     end
 ```
 
@@ -347,7 +355,7 @@ sequenceDiagram
     actor U as Farmer
     participant R as main.js router
     participant V as fieldDetail.js
-    participant MA as mockApi.js
+    participant MA as mockoon.js
     participant OM as openMeteo.js
     participant C as sessionStorage
     participant MOD as models (plan.js)
@@ -385,8 +393,8 @@ sequenceDiagram
     actor U as Farmer
     participant V as records.js
     participant MOD as plan.js
-    participant MA as mockApi.js
-    participant M as MockAPI.io
+    participant MA as mockoon.js
+    participant M as Mockoon
 
     U->>V: enters date + amount (cm or pump hours), Save
     V->>V: validate, convert cm / hours to mm
@@ -394,7 +402,7 @@ sequenceDiagram
     MOD-->>V: recommendedMm
     V->>MA: createRecord({fieldId, date, type:"irrigation", amountMm, recommendedMm})
     MA->>M: POST /records
-    M-->>MA: 201 record
+    M-->>MA: 200 record
     opt pump flow changed
         V->>MA: updateField(id, {..., pumpM3PerHour})
         MA->>M: PUT /fields/:id
@@ -404,14 +412,14 @@ sequenceDiagram
 
 ### 7.4 Delete a field (manual cascade)
 
-MockAPI does not delete child data automatically when used with a flat `records` resource, so the app does it:
+Mockoon CRUD routes don't know that records belong to a field, so the app deletes them first:
 
 ```mermaid
 sequenceDiagram
     actor U as Farmer
     participant V as fieldDetail.js
-    participant MA as mockApi.js
-    participant M as MockAPI.io
+    participant MA as mockoon.js
+    participant M as Mockoon
     U->>V: Delete field → confirm()
     V->>MA: getRecords(id)
     MA->>M: GET /records?fieldId=id
@@ -468,10 +476,11 @@ flowchart TD
 
 | Failure | Where caught | What the user sees |
 |---|---|---|
-| No internet / DNS failure (`fetch` rejects) | view `try/catch` | "You appear to be offline." + **Retry** |
-| MockAPI 404 on `/fields/:id` | view | "Field not found." + link to dashboard |
-| MockAPI 404 on a filtered list | `mockApi.js` | Treated as an empty list `[]` |
-| MockAPI 429 / 5xx | view | "Storage service is busy, try again." + **Retry** |
+| Mockoon not running (`fetch` to localhost:3001 rejects) | `mockoon.js` marks it `API_OFFLINE` → view | "Can't reach AquaPlan's data server. Start the Mockoon environment…" + **Try again** |
+| No internet (Open-Meteo `fetch` rejects) | view `try/catch` | "Network error. Check your internet connection…" + **Try again** |
+| Mockoon 404 on `/fields/:id` | view | "Not found. It may have been deleted." |
+| 404 on a list | `mockoon.js` | Treated as an empty list `[]` |
+| 5xx | view | "The service is having problems right now." + **Try again** |
 | Open-Meteo error / missing `daily` | view | Field info still shown. Plan area says "Weather unavailable" |
 | Geocoding has no `results` | form | "No places found, try another spelling." |
 | Nominatim fails for a map click | form | The coordinates are used as the place name |
@@ -487,9 +496,11 @@ messages in one place and the API code simple.
 
 ## 10. Security and limitations (state these in your report)
 
-- MockAPI endpoints are **public**: anyone with the URL can read or change data. Acceptable for a demo only.
-- No authentication. All users share one dataset.
+- Data is stored by **Mockoon on the local computer** only, so nobody on the internet can read or change it.
+- Data is kept in memory and **reset when Mockoon restarts** (use "Load demo data").
+- No authentication. Everyone using the same computer shares one dataset.
+- Local only: there is no public link; a demo needs both servers running.
 - User-typed text is shown with `textContent` (or escaped) to prevent HTML/script injection.
 - Calculations are simplified FAO-56 defaults, **not** agronomic advice.
-- Free API tiers have limits on resources and requests, so caching reduces calls.
+- Open-Meteo's free tier has request limits, so weather is cached for 1 hour.
 - Nominatim allows about 1 request per second, so map-click names are cached (≈100 m grid).

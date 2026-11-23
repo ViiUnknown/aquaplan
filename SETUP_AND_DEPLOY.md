@@ -56,7 +56,7 @@ aquaplan/
 │   ├── models/                pure calculation code (no DOM, no fetch)
 │   ├── services/              field + records + weather → plan; demo data
 │   ├── utils/                 dates, units, validation, safe HTML
-│   └── views/                 one file per page (pages.js = Home/Purpose/About/Contact, howItWorks.js, auth.js = login/register, admin.js)
+│   └── views/                 one file per page (pages.js = Home/Purpose/About/Contact, howItWorks.js, login.js = login/register, admin.js)
 ├── tests/                     28 tests (npm test, or open /tests/ in the browser)
 └── package.json               shortcuts: npm start, npm run api, npm test
 ```

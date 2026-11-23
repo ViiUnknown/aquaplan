@@ -1,12 +1,8 @@
-// Agronomic defaults for the course prototype.
-// Kc values and stage lengths are approximate FAO-56 values (Tables 11, 12, 22).
-// They are practical defaults, not validated recommendations for real farms.
-
 export const CROPS = {
   rice: {
     label: 'Paddy rice', model: 'rice',
     kcIni: 1.05, kcMid: 1.20, kcEnd: 0.90,
-    stages: [30, 30, 60, 30],          // initial, development, mid-season, late (days)
+    stages: [30, 30, 60, 30],    
     rootDepthM: null, p: null,
   },
   maize: {
@@ -29,7 +25,6 @@ export const CROPS = {
   },
 };
 
-// Available water capacity: mm of plant-available water per metre of soil.
 export const SOILS = {
   sand:      { label: 'Sand',       awcMmPerM: 80 },
   sandyLoam: { label: 'Sandy loam', awcMmPerM: 120 },

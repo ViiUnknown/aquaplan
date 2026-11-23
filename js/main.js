@@ -17,7 +17,7 @@ import { renderDashboard } from './views/dashboard.js';
 import { renderFieldForm } from './views/fieldForm.js';
 import { renderFieldDetail } from './views/fieldDetail.js';
 import { renderRecords } from './views/records.js';
-import { renderLogin, renderRegister, rememberNextPage } from './views/auth.js';
+import { renderLogin, renderRegister, rememberNextPage } from './views/login.js';
 import { renderAdmin } from './views/admin.js';
 import { currentUser, isLoggedIn, isAdmin, logout, onAuthChange } from './auth.js';
 import { setFlash } from './state.js';
@@ -120,9 +120,10 @@ async function router() {
     console.error(error);
     if (!ctx.isCurrent()) return;
     if (error.status === 403) {
-      // Someone else's field: explain it, no "Try again" (it would fail again).
+      // Someone else's field: no "Try again", it would only fail again.
       renderError(app, { title: 'No access', message: friendlyError(error) });
-      app.querySelector('.state')?.insertAdjacentHTML('beforeend', '<a class="btn btn--primary" href="#/dashboard">Go to your dashboard</a>');
+      app.querySelector('.state')
+        ?.insertAdjacentHTML('beforeend', '<a class="btn btn--primary" href="#/dashboard">Go to your dashboard</a>');
     } else {
       renderError(app, { message: friendlyError(error), onRetry: router });
     }

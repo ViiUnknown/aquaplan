@@ -1,14 +1,7 @@
-// Accounts and roles (prototype level).
-//
-// Users are stored on the Mockoon server in /users with a salted SHA-256 password hash
-// (never the plain password). The logged-in user is kept in sessionStorage, so closing the
-// browser tab logs you out.
-//
-// Roles:  "user"  – sees and manages only their own fields
-//         "admin" – also opens #/admin to manage every user and read contact messages
-//
-// Note: this runs entirely in the browser against a mock API, so it demonstrates accounts and
-// roles but is not real security (anyone who can reach the Mockoon server can read /users).
+// Accounts and roles. Users live in Mockoon /users with a salted SHA-256 password hash;
+// the logged-in user is kept in sessionStorage, so closing the tab logs out.
+// "user" sees only their own fields, "admin" can also open #/admin.
+// This is a prototype: anyone who can reach the Mockoon server can read /users.
 
 import { getUsers, createUser } from './api/mockoon.js';
 

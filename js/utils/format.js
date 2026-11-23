@@ -19,6 +19,9 @@ export function formatNumber(value, digits = 1) {
   return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
 }
 
+const SHORT_DATE = { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' };
+const LONG_DATE = { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' };
+
 function utcDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d));
@@ -26,13 +29,13 @@ function utcDate(iso) {
 
 /** "2026-10-16" → "Fri 16 Oct" */
 export function formatShortDate(iso) {
-  return utcDate(iso).toLocaleDateString('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+  return utcDate(iso).toLocaleDateString('en-GB', SHORT_DATE);
 }
 
 /** "2026-10-16" → "16 Oct 2026" */
 export function formatDate(iso) {
   if (!iso) return '–';
-  return utcDate(iso).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
+  return utcDate(iso).toLocaleDateString('en-GB', LONG_DATE);
 }
 
 /** 26.3 mm → "2.6 cm". Farmers measure paddy water with a ruler, so depths are shown in cm. */

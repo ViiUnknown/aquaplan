@@ -1,4 +1,4 @@
-// #/admin – only for the "admin" role: manage users, see every field, read contact messages.
+// Admin page: #/admin – manage users, see every field, read contact messages (admins only)
 
 import {
   getUsers, updateUser, deleteUser, getFields, deleteFieldWithRecords, getMessages, deleteMessage,
@@ -36,7 +36,12 @@ export async function renderAdmin(ctx) {
         <p class="error" data-admin-error role="alert"></p>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th class="num">Fields</th><th>Joined</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+            <thead>
+              <tr>
+                <th>Name</th><th>Email</th><th>Role</th><th class="num">Fields</th><th>Joined</th>
+                <th><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
             <tbody>
               ${users.map(user => {
                 const isMe = user.id === me.id;
@@ -67,7 +72,9 @@ export async function renderAdmin(ctx) {
         ${fields.length === 0 ? html`<p class="muted">No fields yet.</p>` : html`
           <div class="table-wrap">
             <table class="table">
-              <thead><tr><th>Field</th><th>Crop</th><th class="num">Area (ha)</th><th>Owner</th></tr></thead>
+              <thead>
+                <tr><th>Field</th><th>Crop</th><th class="num">Area (ha)</th><th>Owner</th></tr>
+              </thead>
               <tbody>
                 ${fields.map(field => html`
                   <tr>
@@ -98,57 +105,60 @@ export async function renderAdmin(ctx) {
     </section>`);
 
   const adminError = container.querySelector('[data-admin-error]');
-  const reload = message => {
+  const done = message => {
     setFlash(message);
     if (ctx.isCurrent()) renderAdmin(ctx);
   };
+  const failed = error => { adminError.textContent = friendlyError(error); };
 
-  // Change a user's role.
   container.querySelectorAll('[data-role-for]').forEach(select => {
-    select.addEventListener('change', async () => {
-      const user = usersById.get(select.dataset.roleFor);
-      select.disabled = true;
-      try {
-        const saved = await updateUser(user.id, { ...user, role: select.value });
-        updateSession(saved);
-        reload(`${saved.name} is now ${saved.role === 'admin' ? 'an admin' : 'a user'}.`);
-      } catch (error) {
-        select.disabled = false;
-        select.value = user.role;
-        adminError.textContent = friendlyError(error);
-      }
-    });
+    const user = usersById.get(select.dataset.roleFor);
+    select.addEventListener('change', () => changeRole(user, select, done, failed));
   });
-
-  // Delete a user together with their fields and records.
   container.querySelectorAll('[data-delete-user]').forEach(button => {
-    button.addEventListener('click', async () => {
-      const user = usersById.get(button.dataset.deleteUser);
-      const own = fields.filter(f => f.ownerId === user.id);
-      if (!window.confirm(`Delete ${user.name} and their ${own.length} field(s)? This cannot be undone.`)) return;
-      setBusy(button, true, 'Deleting…');
-      try {
-        for (const field of own) await deleteFieldWithRecords(field.id);
-        await deleteUser(user.id);
-        reload(`${user.name} was deleted.`);
-      } catch (error) {
-        setBusy(button, false);
-        adminError.textContent = friendlyError(error);
-      }
-    });
+    const user = usersById.get(button.dataset.deleteUser);
+    const ownFields = fields.filter(f => f.ownerId === user.id);
+    button.addEventListener('click', () => removeUser(user, ownFields, button, done, failed));
   });
-
-  // Delete a contact message.
   container.querySelectorAll('[data-delete-message]').forEach(button => {
-    button.addEventListener('click', async () => {
-      setBusy(button, true, 'Deleting…');
-      try {
-        await deleteMessage(button.dataset.deleteMessage);
-        reload('Message deleted.');
-      } catch (error) {
-        setBusy(button, false);
-        adminError.textContent = friendlyError(error);
-      }
-    });
+    button.addEventListener('click', () => removeMessage(button.dataset.deleteMessage, button, done, failed));
   });
+}
+
+async function changeRole(user, select, done, failed) {
+  select.disabled = true;
+  try {
+    const saved = await updateUser(user.id, { ...user, role: select.value });
+    updateSession(saved);
+    done(`${saved.name} is now ${saved.role === 'admin' ? 'an admin' : 'a user'}.`);
+  } catch (error) {
+    select.disabled = false;
+    select.value = user.role;
+    failed(error);
+  }
+}
+
+/** Deletes the user together with their fields and records. */
+async function removeUser(user, ownFields, button, done, failed) {
+  if (!window.confirm(`Delete ${user.name} and their ${ownFields.length} field(s)? This cannot be undone.`)) return;
+  setBusy(button, true, 'Deleting…');
+  try {
+    for (const field of ownFields) await deleteFieldWithRecords(field.id);
+    await deleteUser(user.id);
+    done(`${user.name} was deleted.`);
+  } catch (error) {
+    setBusy(button, false);
+    failed(error);
+  }
+}
+
+async function removeMessage(id, button, done, failed) {
+  setBusy(button, true, 'Deleting…');
+  try {
+    await deleteMessage(id);
+    done('Message deleted.');
+  } catch (error) {
+    setBusy(button, false);
+    failed(error);
+  }
 }

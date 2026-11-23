@@ -1,4 +1,4 @@
-// #/dashboard – all fields with today's status.
+// Dashboard: #/dashboard – the logged-in user's fields with today's status
 
 import { getFields, getAllRecords } from '../api/mockoon.js';
 import { currentUser } from '../auth.js';
@@ -16,7 +16,7 @@ export async function renderDashboard(ctx) {
   const { container } = ctx;
   renderLoading(container, 'Loading your fields…');
   const [allFields, allRecords] = await Promise.all([getFields(), getAllRecords()]);
-  const fields = allFields.filter(f => f.ownerId === currentUser().id);   // only my own fields
+  const fields = allFields.filter(f => f.ownerId === currentUser().id);
   if (!ctx.isCurrent()) return;
 
   const flash = takeFlash();
@@ -46,20 +46,22 @@ export async function renderDashboard(ctx) {
               <p class="meta">${cropLabel(field.cropType)} · ${formatNumber(field.areaHa)} ha</p>
               <p class="meta">Location: ${field.locationName}</p>
               <div class="field-card__status" data-status-for="${field.id}">
-                <span class="spinner spinner--sm" aria-hidden="true"></span> <span class="muted">Checking weather…</span>
+                <span class="spinner spinner--sm" aria-hidden="true"></span>
+                <span class="muted">Checking weather…</span>
               </div>
             </a>
           </li>`)}
       </ul>
     </section>`);
 
-  // Fill in each card's status as its weather arrives.
+  // Each card fills in as its weather arrives.
   const today = todayISO(TIMEZONE);
+  const slotFor = field => container.querySelector(`[data-status-for="${CSS.escape(field.id)}"]`);
   const results = await Promise.allSettled(fields.map(async field => {
     const records = allRecords.filter(r => r.fieldId === field.id);
     const { analysis } = await analyzeField(field, records, today);
     if (!ctx.isCurrent()) return null;
-    const slot = container.querySelector(`[data-status-for="${CSS.escape(field.id)}"]`);
+    const slot = slotFor(field);
     if (slot) setHTML(slot, fieldStatusSummary(field, analysis));
     return analysis;
   }));
@@ -68,17 +70,26 @@ export async function renderDashboard(ctx) {
   results.forEach((result, i) => {
     if (result.status === 'rejected') {
       console.error(result.reason);
-      const slot = container.querySelector(`[data-status-for="${CSS.escape(fields[i].id)}"]`);
-      if (slot) setHTML(slot, html`<span class="badge badge--muted">Weather unavailable</span> <span class="muted">${friendlyError(result.reason)}</span>`);
+      const slot = slotFor(fields[i]);
+      if (slot) {
+        setHTML(slot, html`
+          <span class="badge badge--muted">Weather unavailable</span>
+          <span class="muted">${friendlyError(result.reason)}</span>`);
+      }
     }
   });
 
   const analyses = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-  const needWater = analyses.filter(a => a.fieldStatus === FIELD_STATUS.ACTIVE && a.todayEntry.status === STATUS.IRRIGATE).length;
+  const needWater = analyses
+    .filter(a => a.fieldStatus === FIELD_STATUS.ACTIVE && a.todayEntry.status === STATUS.IRRIGATE)
+    .length;
   const summary = container.querySelector('[data-summary]');
-  if (summary) {
-    summary.textContent = `${fields.length} field(s) · ${needWater === 0 ? 'none need' : needWater === 1 ? '1 needs' : `${needWater} need`} water today`;
-  }
+  if (summary) summary.textContent = `${fields.length} field(s) · ${needWaterText(needWater)} water today`;
+}
+
+function needWaterText(count) {
+  if (count === 0) return 'none need';
+  return count === 1 ? '1 needs' : `${count} need`;
 }
 
 function renderEmpty(ctx, flash) {

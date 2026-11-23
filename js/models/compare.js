@@ -1,8 +1,4 @@
-// Usual vs actual vs recommended irrigation (REQUIREMENTS.md §9).
-
 import { FIELD_STATUS } from './constants.js';
-
-/** 'over' | 'under' | 'on target' | 'n/a'. Within ±10% counts as on target. */
 export function verdict(actualMm, recommendedMm) {
   if (recommendedMm == null) return 'n/a';
   if (recommendedMm === 0) return actualMm > 0 ? 'over' : 'on target';

@@ -1,4 +1,4 @@
-// #/login and #/register
+// Log in and create an account: #/login and #/register
 
 import { login, register } from '../auth.js';
 import { validateLogin, validateRegister } from '../utils/validation.js';

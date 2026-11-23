@@ -75,8 +75,6 @@ assets/           logo and favicon
 ## Documentation
 
 - [REQUIREMENTS.md](REQUIREMENTS.md): functional requirements, formulas and validation rules
-- [ARCHITECTURE.md](ARCHITECTURE.md): diagrams, data model, request flows, error handling
-- [EXPLANATION.md](EXPLANATION.md): background on the irrigation method
 - [SETUP_AND_DEPLOY.md](SETUP_AND_DEPLOY.md): how to set up and run the app locally
 
 ## Limitations

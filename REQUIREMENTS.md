@@ -301,8 +301,6 @@ Fetch the records for one field with `GET /records?fieldId=…`, then keep only 
 { "id": "…", "name": "Dara", "email": "dara@example.com", "message": "When should I water?", "sentAt": "2026-11-05T09:00:00.000Z" }
 ```
 
-Architecture and diagrams: [ARCHITECTURE.md](ARCHITECTURE.md).
-
 ---
 
 ## 11. External API Calls

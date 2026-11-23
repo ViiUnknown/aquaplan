@@ -113,7 +113,13 @@ async function router() {
     return;
   }
 
-  const params = hash.match(route.pattern).slice(1).map(decodeURIComponent);
+  let params;
+  try {
+    params = hash.match(route.pattern).slice(1).map(decodeURIComponent);
+  } catch {
+    renderNotFound();   // a broken address such as #/fields/%E0
+    return;
+  }
   try {
     await route.view(ctx, ...params);
   } catch (error) {

@@ -1839,36 +1839,6 @@ textarea[aria-invalid="true"] {
   font-weight: 700;
 }
 
-/* "What each word means": word on the left, meaning on the right */
-.terms {
-  margin: 0.75rem 0;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.terms > div {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.15rem;
-}
-
-@media (min-width: 720px) {
-  .terms > div {
-    grid-template-columns: minmax(180px, 240px) 1fr;
-    gap: 1rem;
-  }
-}
-
-.terms dt {
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.terms dd {
-  margin: 0;
-  color: var(--text);
-}
-
 /* Worked example */
 .calc-example {
   margin-top: 0.75rem;

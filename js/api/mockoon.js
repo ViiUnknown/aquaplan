@@ -45,7 +45,7 @@ const normalizeRecord = record => ({ ...normalize(record, RECORD_NUMBERS), field
 
 export async function getFields() {
   const list = await requestList('/fields');
-  return list.map(normalizeField).sort((a, b) => a.name.localeCompare(b.name));
+  return list.map(normalizeField).sort((a, b) => String(a.name ?? '').localeCompare(String(b.name ?? '')));
 }
 
 export async function getField(id) {

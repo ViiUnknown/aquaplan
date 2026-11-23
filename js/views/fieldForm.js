@@ -256,8 +256,11 @@ function setupUsualAmount(form, savedMm) {
 
   function updateUnits() {
     const isRice = isRiceCrop(cropSelect.value);
+    const previousUnit = unit.value;
     setHTML(unit, waterUnitOptions(isRice, isRice ? 'cm' : 'hours'));
     hint.textContent = waterUnitHint(isRice);
+    // A number typed in the old unit would mean something else in the new one, so clear it.
+    if (keptMm == null && unit.value !== previousUnit) input.value = '';
     showKept();
   }
 

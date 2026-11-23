@@ -299,14 +299,23 @@ async function saveRecord(form, { field, records, analysis, today }, reload) {
   try {
     if (existing) await updateRecord(existing.id, record);
     else await createRecord(record);
-    // Remember the pump flow on the field, so the farmer types it only once.
-    if (byPump && input.pumpM3PerHour !== field.pumpM3PerHour) {
-      await updateField(field.id, { ...field, pumpM3PerHour: input.pumpM3PerHour });
-    }
-    setFlash(existing ? 'Record updated.' : 'Record saved.');
-    await reload();
   } catch (error) {
     setBusy(button, false);
     formError.textContent = `Could not save: ${friendlyError(error)}`;
+    return;
   }
+
+  // The record is saved. Remember the pump flow on the field, so the farmer types it only once.
+  // If this part fails, the record still exists, so don't report the save as failed.
+  let message = existing ? 'Record updated.' : 'Record saved.';
+  if (byPump && input.pumpM3PerHour !== field.pumpM3PerHour) {
+    try {
+      await updateField(field.id, { ...field, pumpM3PerHour: input.pumpM3PerHour });
+    } catch (error) {
+      console.error(error);
+      message += " The pump flow couldn't be saved on the field, so you may need to type it again next time.";
+    }
+  }
+  setFlash(message);
+  await reload();
 }

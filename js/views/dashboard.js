@@ -16,8 +16,8 @@ export async function renderDashboard(ctx) {
   const { container } = ctx;
   renderLoading(container, 'Loading your fields…');
   const [allFields, allRecords] = await Promise.all([getFields(), getAllRecords()]);
-  const fields = allFields.filter(f => f.ownerId === currentUser().id);
   if (!ctx.isCurrent()) return;
+  const fields = allFields.filter(f => f.ownerId === currentUser().id);
 
   const flash = takeFlash();
 

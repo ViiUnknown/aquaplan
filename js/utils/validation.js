@@ -1,5 +1,6 @@
 import { CROPS, SOILS, RICE_DEFAULTS } from '../models/constants.js';
 import { isValidISODate, addDays } from './date.js';
+import { pumpHoursToMm } from './format.js';
 
 const isNum = value => typeof value === 'number' && Number.isFinite(value);
 const isPumpFlow = value => isNum(value) && value >= 1 && value <= 1000;
@@ -80,6 +81,11 @@ export function validateRecord(r, field, today) {
     else if (r.unit === 'hours' && r.amount > 24) errors.amount = 'At most 24 hours. Add one record per day.';
     else if (r.unit === 'cm' && r.amount > bundCm(field)) {
       errors.amount = `At most ${bundCm(field)} cm: more than that would flow over your field wall.`;
+    } else if (r.unit === 'hours' && CROPS[field.cropType]?.model === 'rice'
+      && isPumpFlow(r.pumpM3PerHour) && field.areaHa > 0
+      && pumpHoursToMm(r.amount, r.pumpM3PerHour, field.areaHa) > bundCm(field) * 10) {
+      errors.amount = `That much pumping would raise the water more than ${bundCm(field)} cm `
+        + 'and flow over your field wall.';
     }
     if (r.unit === 'hours' && !isPumpFlow(r.pumpM3PerHour)) errors.pumpM3PerHour = PUMP_ERROR;
   } else if (r.type === 'depthReading') {

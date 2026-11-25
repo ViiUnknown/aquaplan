@@ -368,8 +368,7 @@ FinalProject/
 │   │   ├── plan.js          # buildPlan() → statuses, recommendationForDate()
 │   │   └── compare.js       # buildComparison(), verdict()
 │   ├── services/
-│   │   ├── fieldService.js  # loadFieldAnalysis(): field + records + weather + model
-│   │   └── demoData.js      # seedDemoData()
+│   │   └── fieldService.js  # loadFieldAnalysis(): field + records + weather + model
 │   ├── views/
 │   │   ├── dashboard.js
 │   │   ├── fieldForm.js

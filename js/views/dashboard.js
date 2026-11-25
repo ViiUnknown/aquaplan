@@ -3,12 +3,11 @@
 import { getFields, getAllRecords } from '../api/mockoon.js';
 import { currentUser } from '../auth.js';
 import { analyzeField } from '../services/fieldService.js';
-import { seedDemoData } from '../services/demoData.js';
 import { TIMEZONE } from '../config.js';
 import { STATUS, FIELD_STATUS } from '../models/constants.js';
 import { todayISO } from '../utils/date.js';
 import { formatNumber } from '../utils/format.js';
-import { html, setHTML, renderLoading, friendlyError, flashBanner, setBusy } from '../utils/ui.js';
+import { html, setHTML, renderLoading, friendlyError, flashBanner } from '../utils/ui.js';
 import { takeFlash } from '../state.js';
 import { cropLabel, fieldStatusSummary } from './components.js';
 
@@ -103,21 +102,7 @@ function renderEmpty(ctx, flash) {
         <p>Add your first field. AquaPlan will tell you when to water it and how much.</p>
         <div class="actions actions--center">
           <a class="btn btn--primary" href="#/fields/new">+ Add your first field</a>
-          <button class="btn" type="button" data-action="demo">Load demo data</button>
         </div>
-        <p class="error" data-demo-error></p>
       </div>
     </section>`);
-
-  const button = container.querySelector('[data-action="demo"]');
-  button.addEventListener('click', async () => {
-    setBusy(button, true, 'Creating demo fields…');
-    try {
-      await seedDemoData();
-      if (ctx.isCurrent()) await renderDashboard(ctx);
-    } catch (error) {
-      setBusy(button, false);
-      container.querySelector('[data-demo-error]').textContent = friendlyError(error);
-    }
-  });
 }

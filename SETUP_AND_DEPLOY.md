@@ -54,7 +54,7 @@ aquaplan/
 │   │   ├── nominatim.js       map point → place name
 │   │   └── mockoon.js         create/read/update/delete for users, fields, records, messages
 │   ├── models/                pure calculation code (no DOM, no fetch)
-│   ├── services/              field + records + weather → plan; demo data
+│   ├── services/              field + records + weather → plan
 │   ├── utils/                 dates, units, validation, safe HTML
 │   └── views/                 one file per page (pages.js = Home/Purpose/About/Contact, howItWorks.js, login.js = login/register, admin.js)
 ├── tests/                     28 tests (npm test, or open /tests/ in the browser)
@@ -100,13 +100,13 @@ Other options: VS Code **Live Server**, or `python -m http.server 3000`.
 
 ### First run
 1. Open **Dashboard** from the ☰ menu. ✅ You are sent to **Log in** (the dashboard needs an account).
-2. Click **Create one** and register (or log in as the admin from MOCKOON_SETUP.md §5b).
-   ✅ "No fields yet" with two buttons.
-3. Click **Load demo data**. ✅ Three Cambodian demo fields appear with today's status. They belong to your account.
+2. Log in as the admin (MOCKOON_SETUP.md §5b). ✅ Four Cambodian fields are already there with today's status:
+   Battambang Scheme and Prey Veng Irrigation Scheme (rice), Pursat Field (cassava) and Kampong Cham Field (maize).
+3. Or click **Create one** and register. ✅ A new account starts with "No fields yet" and **+ Add your first field**.
 4. Optional: open http://localhost:3001/api/fields to see the saved data as JSON.
 
-> Mockoon keeps data **in memory**. When you restart it, the data is empty again (only the starting admin
-> account is left) – register and click **Load demo data** before each demo. See MOCKOON_SETUP.md §5.
+> Mockoon keeps data **in memory**. When you restart it, everything goes back to the starting data: the admin
+> account and its four fields. Accounts and fields you added are gone. See MOCKOON_SETUP.md §5.
 
 ### Run the calculation tests
 ```powershell
@@ -145,7 +145,7 @@ computer, so each person has their **own** data.
 | Blank page, console says *"Cannot use import statement"* | Opened by double-click (`file://`). Use `npm start` |
 | `Port 3000/3001 is already in use` | That server is already running in another terminal. Use it, or stop it with Ctrl+C |
 | CORS error in the console | CORS is off in Mockoon. Environment **Settings → CORS** on (it is on in `aquaplan.json`) |
-| My fields (or my account) disappeared | Mockoon was restarted, so only the starting admin account is left. Register again, then click **Load demo data** |
+| My fields (or my account) disappeared | Mockoon was restarted, so only the starting data is left (the admin and its four fields). Register again |
 | "Not found" for a field | The field was deleted, or Mockoon restarted |
 | Weather unavailable on one field | No internet, or an Open-Meteo hiccup. Click **Try again** |
 | Changes on `main` rejected for teammates | Expected: `main` is protected. Use a branch and a pull request |
@@ -159,7 +159,7 @@ to `localhost:3001` (Mockoon) and Open-Meteo with its status.
 
 - [ ] `npm test` shows 28/28
 - [ ] `npm run api` (or the Mockoon app) shows the server on port 3001
-- [ ] http://localhost:3001/api/fields shows `[]` (or your data)
+- [ ] http://localhost:3001/api/fields shows the four starting fields
 - [ ] `npm start` and http://localhost:3000 opens
-- [ ] "Load demo data" works
-- [ ] Before a demo: both servers running, demo data loaded
+- [ ] Logging in as the admin shows the four starting fields
+- [ ] Before a demo: both servers running (restart Mockoon to reset to the starting data)

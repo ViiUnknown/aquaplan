@@ -1,16 +1,3 @@
-// App start-up and hash router.
-//   #/home  #/purpose  #/how-it-works  #/about  #/contact   information pages
-//   #/dashboard            all fields
-//   #/fields/new           add a field
-//   #/fields/:id           field detail (plan, chart, comparison)
-//   #/fields/:id/edit      edit a field
-//   #/fields/:id/records   irrigation records + depth readings
-//   #/login  #/register     accounts          #/admin   admin only
-//
-// access: 'user'  → must be logged in (any role)
-//         'admin' → must be logged in with the admin role
-//         'guest' → only when logged out (login/register)
-
 import { renderHome, renderPurpose, renderAbout, renderContact } from './views/pages.js';
 import { renderHowItWorks } from './views/howItWorks.js';
 import { renderDashboard } from './views/dashboard.js';
@@ -43,9 +30,6 @@ const routes = [
   { pattern: /^#\/fields\/([^/]+)$/, view: renderFieldDetail, access: 'user' },
   { pattern: /^#\/admin$/, view: renderAdmin, nav: 'admin', access: 'admin' },
 ];
-
-// Each navigation gets a number. Slow requests from an old page check
-// ctx.isCurrent() and stop instead of drawing over the new page.
 let currentRender = 0;
 
 function renderNotFound() {
@@ -66,7 +50,6 @@ function renderAdminsOnly() {
     </div>`);
 }
 
-/** Show/hide menu items for guests, users and admins, and the name + Log out button. */
 function updateAuthUI(user) {
   document.querySelectorAll('[data-auth]').forEach(el => {
     const need = el.dataset.auth;
@@ -97,13 +80,12 @@ async function router() {
     return;
   }
 
-  // Access rules (see the list at the top of this file).
   if (route.access === 'guest' && isLoggedIn()) {
     location.hash = '#/dashboard';
     return;
   }
   if ((route.access === 'user' || route.access === 'admin') && !isLoggedIn()) {
-    rememberNextPage(hash);               // come back here after logging in
+    rememberNextPage(hash);             
     setFlash('Please log in to continue.', 'error');
     location.hash = '#/login';
     return;
@@ -117,7 +99,7 @@ async function router() {
   try {
     params = hash.match(route.pattern).slice(1).map(decodeURIComponent);
   } catch {
-    renderNotFound();   // a broken address such as #/fields/%E0
+    renderNotFound(); 
     return;
   }
   try {
@@ -126,7 +108,6 @@ async function router() {
     console.error(error);
     if (!ctx.isCurrent()) return;
     if (error.status === 403) {
-      // Someone else's field: no "Try again", it would only fail again.
       renderError(app, { title: 'No access', message: friendlyError(error) });
       app.querySelector('.state')
         ?.insertAdjacentHTML('beforeend', '<a class="btn btn--primary" href="#/dashboard">Go to your dashboard</a>');

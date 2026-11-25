@@ -43,9 +43,10 @@ You need Node.js. Open two terminals in the project folder:
 npm run api      # 1. Mockoon data server  →  http://localhost:3001/api
 npm start        # 2. website              →  http://localhost:3000
 ```
-Then open http://localhost:3000 and click **Load demo data** on the dashboard.
+Then open http://localhost:3000 and log in as the admin: four Cambodian fields are already there
+(Battambang Scheme, Prey Veng Irrigation Scheme, Pursat Field, Kampong Cham Field).
 Instead of `npm run api` you can open `mockoon/aquaplan.json` in the Mockoon desktop app and press ▶ Start.
-Mockoon keeps data in memory, so the data is empty again after a restart.
+Mockoon keeps data in memory, so after a restart it goes back to the admin account and its four fields.
 
 Don't open `index.html` by double-clicking: browsers block ES modules on `file://`.
 
@@ -64,7 +65,7 @@ css/styles.css    all styles (light and dark themes, responsive)
 js/main.js        start-up and hash router
 js/api/           fetch wrappers: openMeteo, nominatim, mockoon, http
 js/models/        pure calculation code (Kc, upland, rice, 7-day plan)
-js/services/      combines field + records + weather into a plan; demo data
+js/services/      combines field + records + weather into a plan
 js/views/         one file per page + shared components and the chart
 js/utils/         dates, unit conversion, validation, safe HTML
 tests/            model tests
